@@ -3,11 +3,12 @@ import request from "supertest";
 import { PrismaClient } from "@prisma/client";
 import { createApp } from "../../src/app";
 import { seedDatabase } from "../../prisma/seed";
-import { newPrisma, queueByName } from "../helpers";
+import { newPrisma, queueByName, resetAndSeed } from "../helpers";
 
 let prisma: PrismaClient;
-beforeAll(() => {
+beforeAll(async () => {
   prisma = newPrisma();
+  await resetAndSeed(prisma);
 });
 afterAll(async () => {
   await prisma.$disconnect();

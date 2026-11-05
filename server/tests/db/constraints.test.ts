@@ -1,10 +1,11 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "vitest";
 import { PrismaClient } from "@prisma/client";
-import { newPrisma, queueByName, userByEmail } from "../helpers";
+import { newPrisma, queueByName, resetAndSeed, userByEmail } from "../helpers";
 
 let prisma: PrismaClient;
-beforeAll(() => {
+beforeAll(async () => {
   prisma = newPrisma();
+  await resetAndSeed(prisma);
 });
 afterAll(async () => {
   await prisma.$disconnect();
