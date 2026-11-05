@@ -1,6 +1,6 @@
 # Deliverable 1 Plan: Queue and Service Management System (Theme 9)
 
-Team: TauForge (Rattathamnoon Buranapattana, 67070501037) and MacOverlorD (Mac).
+Team: TauForge (Rattathamnoon Buranapattana, 67070501037) and MacOverlorD (Lappawat Laohasoot, 67070501039).
 Due: Sun 8 Nov 2026, 23:59, one self-contained PDF on LEB2 (Parts A-F), plus a release tag on `main`.
 Sources: `group_work_specs_v1.pdf` (master spec) and `project_deliverable_1_v1.pdf` (handout).
 
@@ -19,6 +19,9 @@ Sources: `group_work_specs_v1.pdf` (master spec) and `project_deliverable_1_v1.p
 | D-09 | Ticket numbers are per queue, assigned atomically in a database transaction (counter row on the queue, incremented with row lock). Numbers are never reused. |
 | D-10 | Auth: bcrypt password hashes, server-side session stored in the DB, httpOnly cookie, 8 hour expiry, logout deletes the session. |
 | D-11 | Public display endpoint returns only queue name, current serving number, and waiting count. No names or customer IDs. The display screen itself is Sprint 2. |
+| D-12 | `Queue.nextNumber` incremented with `UPDATE ... RETURNING` in the join transaction, plus `@@unique([queueId, number])`. |
+| D-13 | Partial unique index on `(queueId, customerId)` for active statuses, raw SQL in the F-01 migration, proven by a DB-level test. |
+| D-14 | Each student keeps at most one open PR; merge in planned order; contracts ship in the docs PRs by Fri morning; every PR shows failing and passing test output. (Revised 5 Nov after Mac's review, replaces "one PR at a time".) |
 
 ## 2. Product baseline (whole product, Parts A-D)
 
@@ -118,7 +121,7 @@ flowchart LR
 | Thu 5 Nov evening | Step 0: first commit (README, .gitignore, `.env.example`), create `sprint1-staging`, labels, project board, Issues F-01..F-08. Draft SRS. | Together |
 | Fri 6 Nov morning | Finish SRS, features, traceability, sprint plan, system SDS. | Tau: SRS + features + traceability. Mac: system SDS + sprint plan. Swap review. |
 | Fri 6 Nov midday | Sprint 1 contracts (feature SDS, AC, STS, DoD) for F-01..F-08, committed before code. | Odd features Tau, even Mac, each reviews the other's. |
-| Fri 6 Nov afternoon to Sat 7 Nov | Implement test-first, one branch per feature off `sprint1-staging`, one PR at a time, cross-reviewed. | See section 7. |
+| Fri 6 Nov afternoon to Sat 7 Nov | Implement test-first, one branch per feature off `sprint1-staging`, at most one open PR per student (D-14), cross-reviewed. | See section 7. |
 | Sat 7 Nov evening | Integration, system tests and e2e on staging. Release PR staging to `main`. Tag `v0.1.0-sprint1`. Record test output at that commit. | Together |
 | Sun 8 Nov | Screenshots, evidence, contribution table, AI-use declaration, README check, build PDF, both read it, submit before 20:00 (buffer to 23:59). | Together |
 
@@ -137,7 +140,7 @@ Order is dependency-driven. Author writes the failing test first, then the code.
 | 7 | F-07 public display endpoint | Tau | Mac |
 | 8 | F-08 UI screens | Together (pair) | each other |
 
-Workflow per feature: Issue (links FR/BR, feature ID, contract) -> branch `feature/F-0X-name` from `sprint1-staging` -> failing test commit -> implementation commit -> PR (draft first) into staging -> review -> merge. Claude never merges, never closes Issues by hand (`Closes #N` only), never adds Co-Authored-By lines, and opens PRs one at a time per the standing PR rules.
+Workflow per feature: Issue (links FR/BR, feature ID, contract) -> branch `feature/F-0X-name` from `sprint1-staging` -> failing test commit -> implementation commit -> PR (draft first) into staging -> review -> merge. Claude never merges, never closes Issues by hand (`Closes #N` only), never adds Co-Authored-By lines, and follows D-14 (at most one open PR per student, merge in planned order).
 
 ## 8. Test plan (what Part F must show)
 

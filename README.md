@@ -7,7 +7,7 @@ CPE 334 group project, Theme 9. A service counter manages a waiting line: custom
 | Student | GitHub |
 |---|---|
 | Rattathamnoon Buranapattana (67070501037) | TauForge |
-| Mac | MacOverlorD |
+| Lappawat Laohasoot (67070501039) | MacOverlorD |
 
 ## Status
 
