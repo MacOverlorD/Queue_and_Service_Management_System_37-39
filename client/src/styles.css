@@ -89,3 +89,7 @@ form button { margin-top: var(--space); width: 100%; }
 }
 .panel { margin-top: calc(var(--space) * 1.5); display: grid; gap: 12px; }
 .panel .btn { justify-self: start; }
+/* A row may wrap on narrow screens: the Start/Complete button drops to its own line instead of overflowing */
+.panel .list-item { flex-wrap: wrap; }
+.panel .list-item > * { min-width: 0; }
+.panel .ticket-number { overflow-wrap: anywhere; }

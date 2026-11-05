@@ -39,6 +39,8 @@ Shared UI states: loading indicator while the queue loads; empty states "No queu
 | TEST-F08b-02 | AC-F08b-02 | e2e | Queue B free; customer3 joined B through the API | As operator1 select B; click Call next, Start, Complete; reload the page | Panel shows `CALLED`, then `SERVING`; after Complete the panel is empty; after reload the entry is not in the active list, and the API reports it `COMPLETED` |
 | TEST-F08b-03 | AC-F08b-03 | e2e | Queue A has a current entry (seed: customer4 serving #4); queue B has no waiting entries (customer5 has no entries) | Select A and click Call next; select B; then a customer joins B through the API while the console is open (test sets a short refresh interval) | A: error banner with the `QUEUE_BUSY` message, nothing changed; B: "No one is waiting", then the new entry appears after the refresh without reload |
 | TEST-F08b-03b | AC-F08b-03 | manual | Throttled network in browser dev tools | Open the console | Loading indicator visible before data; recorded as a manual check with a screenshot |
+| TEST-F08b-01b | AC-F08b-01 | e2e | Window 390 px wide; operator1; queue A (customer4 serving) | Select A | Page does not scroll sideways and the "Now serving" row stays inside the card (Start/Complete may wrap to its own line) |
+| TEST-F08b-03c | AC-F08b-03 | e2e | Queue A busy | Click Call next; wait two refresh cycles; switch queue | `QUEUE_BUSY` message is above the waiting list (next to the button), is still shown after two refreshes, and is cleared by switching queue |
 
 ## 6. Definition of Done
 
@@ -50,3 +52,4 @@ All AC implemented; TEST-F08b-01..03 executed and passing with output in the PR;
 |---|---|---|
 | 5 Nov 2026 | First version | Deliverable 1 |
 | 5 Nov 2026 | `operator.spec.ts` resets and reseeds `queue_test` before it runs (shared `e2e/reset-db.ts`, also used by the global setup), because `customer.spec.ts` changes queues A and B first. TEST-F08b-02 uses customer3 and TEST-F08b-03 uses customer5 as the joining customer. The queue selector is a labelled `<select>`; the panels are `region` "Now serving" and `list` "Waiting list" for stable locators. | Made the journeys independent of the customer journeys |
+| 5 Nov 2026 | Action error moved next to Call next and no longer cleared by a refresh (cleared by the next action or a queue switch); a failed refresh shows its own message that clears on the next successful load; rows wrap on narrow screens. Added TEST-F08b-01b and TEST-F08b-03c | Tau's review on #26 |
