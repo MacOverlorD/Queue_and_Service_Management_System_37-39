@@ -2,7 +2,7 @@
   "name": "queue-and-service-management-system",
   "private": true,
   "scripts": {
-    "install:all": "npm --prefix server install && npm --prefix client install",
+    "install:all": "cd server && npm ci && cd ../client && npm ci",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "test": "npm --prefix server test",
