@@ -1,5 +1,6 @@
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import request from "supertest";
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { Express } from "express";
 import { createApp } from "../../src/app";
@@ -125,6 +126,26 @@ describe("TEST-F02-05 / AC-F02-05: logout", () => {
 
   test("logout without a session is 401", async () => {
     const res = await request(app).post("/api/auth/logout");
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe("UNAUTHENTICATED");
+  });
+});
+
+describe("TEST-F02-03c / AC-F02-03: unknown email costs a bcrypt compare (review of #19)", () => {
+  test("login with an unknown email still runs one bcrypt compare, so timing does not reveal accounts", async () => {
+    const spy = vi.spyOn(bcrypt, "compare");
+    try {
+      await request(app).post("/api/auth/login").send({ email: "nobody@example.test", password: PASSWORD }).expect(401);
+      expect(spy).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+describe("TEST-F02-04b / AC-F02-04: malformed cookie (review of #19)", () => {
+  test("a sid cookie that is not valid percent-encoding is 401 UNAUTHENTICATED, not 500", async () => {
+    const res = await request(app).get("/api/auth/me").set("Cookie", "sid=%E0%A4%A");
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe("UNAUTHENTICATED");
   });
