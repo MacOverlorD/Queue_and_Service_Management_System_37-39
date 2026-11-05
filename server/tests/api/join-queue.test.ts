@@ -135,6 +135,20 @@ describe("TEST-F04-05 / AC-F04-05: closed, unknown and invalid queue", () => {
   });
 });
 
+describe("TEST-F04-03c / AC-F04-03: only the active-entry index maps to 409 (review of #22)", () => {
+  test("a ticket-number collision is a 500 INTERNAL_ERROR, not DUPLICATE_ACTIVE_ENTRY, and writes nothing", async () => {
+    const a = await queueByName(prisma, "Registrar Desk");
+    // Corrupt the counter so the next number (6) already exists in queue A.
+    await prisma.queue.update({ where: { id: a.id }, data: { lastNumber: 5 } });
+    const before = await writes(a.id);
+
+    const res = await request(app).post(`/api/queues/${a.id}/entries`).set("Cookie", await cookieFor("customer3@example.test"));
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("INTERNAL_ERROR");
+    expect(await writes(a.id)).toEqual(before);
+  });
+});
+
 describe("TEST-F04-06 / AC-F04-06: concurrent joins (NFR-03)", () => {
   test("50 customers joining at once get 50 distinct consecutive numbers", async () => {
     const b = await queueByName(prisma, "Finance Desk");
