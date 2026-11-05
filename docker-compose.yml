@@ -1,0 +1,15 @@
+# Local development database only. Docker packaging of the app comes in Lab 5.
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: queue_dev
+      POSTGRES_PASSWORD: queue_dev_password
+      POSTGRES_DB: queue_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - queue_db_data:/var/lib/postgresql/data
+
+volumes:
+  queue_db_data:
