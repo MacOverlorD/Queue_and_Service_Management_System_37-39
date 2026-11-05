@@ -5,7 +5,7 @@ Read this file first. It tells you what the project is, who owns what, the order
 ## 1. Project
 
 - Course: CPE 334, Group Work, Theme 9 "Queue and Service Management System".
-- Team: **TauForge** (Rattathamnoon Buranapattana, 67070501037) and **MacOverlorD** (Mac).
+- Team: **TauForge** (Rattathamnoon Buranapattana, 67070501037) and **MacOverlorD** (Lappawat Laohasoot, 67070501039).
 - Repo: https://github.com/TauForge/Queue_and_Service_Management_System_37-39
 - Current deadline: **Project Deliverable 1, Sun 8 Nov 2026, 23:59.** One self-contained PDF (Parts A-F) on LEB2, plus a release tag on `main`. Target submitting by 20:00.
 - Later: Lab 5 (CI/CD, Docker, GCP) due 15 Nov. Design now for containers, but do not build Docker or CI yet.
@@ -32,6 +32,9 @@ Flow: a seeded queue exists. A customer logs in, joins it, and sees their ticket
 | D-09 | Ticket numbers are per queue, assigned atomically in a DB transaction, never reused. |
 | D-10 | Auth: bcrypt hashes, server-side session in the DB, httpOnly cookie, 8 hour expiry, logout deletes the session. |
 | D-11 | Public display endpoint returns only queue name, current serving number, waiting count. No names or customer IDs. |
+| D-12 | Ticket numbering schema: `Queue.nextNumber` incremented atomically with `UPDATE ... RETURNING` inside the join transaction, plus `@@unique([queueId, number])` on `QueueEntry`. |
+| D-13 | Duplicate active entry is blocked by the database: partial unique index `ON "QueueEntry"("queueId","customerId") WHERE status IN ('waiting','called','serving')`, written as raw SQL in the F-01 migration (Prisma schema cannot express it). A DB-level test must prove it. |
+| D-14 | PR policy: each student may have at most one open PR at a time (so at most two open in total). PRs merge into staging in the planned order. Contracts for each student's features ship in their docs PR (#1, #2), merged by Fri 6 Nov morning. |
 
 ## 4. Features and ownership
 
@@ -77,7 +80,7 @@ flowchart TD
   REL --> PDF[Evidence and PDF]
 ```
 
-Merge order into `sprint1-staging`: docs, F-01, F-02, F-03, F-04, F-05, F-06, F-07, F-08a, F-08b. Features after F-03 can be written in parallel using seed data, but **PRs open and merge one at a time**.
+Merge order into `sprint1-staging`: docs, F-01, F-02, F-03, F-04, F-05, F-06, F-07, F-08a, F-08b. Features after F-03 can be written in parallel using seed data. **Each student keeps at most one open PR (D-14), and PRs merge in this order.**
 
 ## 6. Timeline
 
@@ -109,10 +112,10 @@ Per feature:
 1. Issue links the feature ID, FR/BR, and contract file.
 2. Branch from `sprint1-staging`.
 3. Commit 1: the failing test. Commit 2: the implementation that makes it pass. Update docs in the same PR.
-4. Run tests, inspect your own diff, open a **draft PR** into `sprint1-staging` with `Closes #N`.
+4. Run tests, inspect your own diff, open a **draft PR** into `sprint1-staging` with `Closes #N`, using `.github/pull_request_template.md`. **Paste the failing test output (with commit ID) and the passing test output (with commit ID) in the PR.** This is the TDD evidence for the PDF.
 5. Mark ready and request the other student. The reviewer leaves a specific check, question, finding or reason for approval.
 6. The author fixes review points test-first. The reviewer approves. **Authors never approve their own PR.**
-7. Merge, then open the next PR. One PR open at a time.
+7. Merge in the planned order. Each student keeps at most one open PR at a time (D-14).
 
 Release: after all features merge, run integration and system tests on staging, open a release PR to `main`, merge after review, tag `v0.1.0-sprint1`, and save test output tied to that commit. Do not change `main` after the tag.
 

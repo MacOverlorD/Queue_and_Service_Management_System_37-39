@@ -1,0 +1,48 @@
+# GitHub only auto-closes "Closes #N" issues when a PR merges into the default branch (main).
+# Our feature PRs merge into sprint staging branches first, so this workflow closes the linked
+# issues at that point. The release PR to main keeps its own "Closes #N" list.
+name: Close linked issues on staging merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - "sprint*-staging"
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  close-linked-issues:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const text = `${pr.title}\n${pr.body ?? ""}`;
+            const pattern = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
+            const numbers = [...new Set([...text.matchAll(pattern)].map((m) => Number(m[1])))];
+            for (const issue_number of numbers) {
+              const { data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+              });
+              if (issue.pull_request || issue.state === "closed") continue;
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                body: `Completed by PR #${pr.number} (merged into \`${pr.base.ref}\`).`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                state: "closed",
+                state_reason: "completed",
+              });
+            }

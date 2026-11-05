@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  OPERATOR
+}
+
+enum EntryStatus {
+  WAITING
+  CALLED
+  SERVING
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+
+  sessions       Session[]
+  operatorQueues OperatorQueue[]
+  entries        QueueEntry[]    @relation("EntryCustomer")
+  handledEntries QueueEntry[]    @relation("EntryOperator")
+  events         EntryEvent[]
+}
+
+model Session {
+  id        String   @id
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Queue {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  serviceName String
+  // Last ticket number handed out. A join increments it atomically (D-12).
+  lastNumber  Int     @default(0)
+  isOpen      Boolean @default(true)
+
+  operators OperatorQueue[]
+  entries   QueueEntry[]
+}
+
+model OperatorQueue {
+  userId  Int
+  queueId Int
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  queue Queue @relation(fields: [queueId], references: [id], onDelete: Cascade)
+
+  @@id([userId, queueId])
+}
+
+// The partial unique index that allows only one active entry per customer and queue (D-13)
+// is created with raw SQL in the first migration because Prisma cannot express it.
+model QueueEntry {
+  id                  Int         @id @default(autoincrement())
+  queueId             Int
+  customerId          Int
+  number              Int
+  status              EntryStatus @default(WAITING)
+  createdAt           DateTime    @default(now())
+  calledAt            DateTime?
+  servingAt           DateTime?
+  completedAt         DateTime?
+  handledByOperatorId Int?
+
+  queue     Queue        @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  customer  User         @relation("EntryCustomer", fields: [customerId], references: [id])
+  operator  User?        @relation("EntryOperator", fields: [handledByOperatorId], references: [id])
+  events    EntryEvent[]
+
+  @@unique([queueId, number])
+  @@index([customerId])
+}
+
+model EntryEvent {
+  id         Int          @id @default(autoincrement())
+  entryId    Int
+  fromStatus EntryStatus?
+  toStatus   EntryStatus
+  actorId    Int
+  at         DateTime     @default(now())
+
+  entry QueueEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  actor User       @relation(fields: [actorId], references: [id])
+
+  @@index([entryId])
+}

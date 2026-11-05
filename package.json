@@ -1,0 +1,14 @@
+{
+  "name": "queue-and-service-management-system",
+  "private": true,
+  "scripts": {
+    "install:all": "cd server && npm ci && cd ../client && npm ci",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "test": "npm --prefix server test",
+    "build:server": "npm --prefix server run build",
+    "build:client": "npm --prefix client run build",
+    "install:e2e": "cd e2e && npm ci && npx playwright install chromium",
+    "test:e2e": "cd e2e && npx playwright test"
+  }
+}
