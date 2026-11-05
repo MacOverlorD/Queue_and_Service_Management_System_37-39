@@ -11,7 +11,7 @@ CPE 334 group project, Theme 9. A service counter manages a waiting line: custom
 
 ## Status
 
-Sprint 1 in progress (Project Deliverable 1, due 8 Nov 2026). F-01 provides the scaffold, schema, migration and seed; features F-02 onward follow.
+Sprint 1 is complete and under release review (Project Deliverable 1, due 8 Nov 2026): authentication, role and queue authorization, joining a queue, ticket and queue views, the operator serve workflow, the public display API, and the customer and operator screens. Known gaps are listed in [`docs/sprints/sprint-1/known-gaps.md`](docs/sprints/sprint-1/known-gaps.md).
 
 ## Planned stack
 
