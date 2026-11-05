@@ -5,6 +5,7 @@ import { authRouter } from "./routes/auth";
 import { applyRouteAccess } from "./routes/access";
 import { entriesRouter } from "./routes/entries";
 import { queuesRouter } from "./routes/queues";
+import { serveRouter } from "./routes/serve";
 import { sendError } from "./http/errors";
 
 export function createApp(prisma: PrismaClient): Express {
@@ -26,6 +27,7 @@ export function createApp(prisma: PrismaClient): Express {
   applyRouteAccess(app, prisma);
   app.use("/api/queues", queuesRouter(prisma));
   app.use("/api", entriesRouter(prisma));
+  app.use("/api", serveRouter(prisma));
 
   // Last resort: never leak stack traces or SQL to the client.
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
