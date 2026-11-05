@@ -85,6 +85,7 @@ UI: none in this feature (queue list and Join button are F-08a).
 | TEST-F04-05 | AC-F04-05 | api | Queue C is closed; id 9999 does not exist | POST join C; POST join 9999; POST join `abc` as customer1 | 409 `QUEUE_CLOSED`; 404 `NOT_FOUND`; 400 `VALIDATION_ERROR`; DB unchanged in all three |
 | TEST-F04-06 | AC-F04-06 | integration | 50 extra test customers created in the test DB, each logged in; A `lastNumber` = n | Fire 50 joins to A with `Promise.all` | 50 × 201; numbers are exactly n + 1 .. n + 50 with no duplicates; A `lastNumber` n + 50 |
 | TEST-F04-06b | AC-F04-03 | integration | One logged-in customer with no entry in A | Fire 10 joins to A from that customer at the same time | Exactly one 201 and nine 409 `DUPLICATE_ACTIVE_ENTRY`; one active entry in DB; `lastNumber` advanced by exactly 1 |
+| TEST-F04-03c | AC-F04-03 | api | Queue A `lastNumber` set back to 5 while number 6 exists | POST join A as customer3 | 500 `INTERNAL_ERROR` (not 409); nothing written. Only the D-13 index maps to `DUPLICATE_ACTIVE_ENTRY` |
 
 TDD: TEST-F04-03 and TEST-F04-06 are committed failing before the implementation; their failing and passing output goes in the PR.
 
@@ -97,3 +98,4 @@ All AC implemented; TEST-F04-01..06b executed and passing at the PR head with fa
 | Date | Change | Reason |
 |---|---|---|
 | 5 Nov 2026 | First version; confirms `lastNumber` (SRS Q-02) | Deliverable 1 |
+| 5 Nov 2026 | Only a P2002 on `(queueId, customerId)` maps to 409; added TEST-F04-03c | Tau's review on #22 |

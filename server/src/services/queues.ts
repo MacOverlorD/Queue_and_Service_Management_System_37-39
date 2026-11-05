@@ -68,7 +68,10 @@ export async function joinQueue(prisma: PrismaClient, queueId: number, customerI
     );
     return entryView(prisma, entry, queueName);
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    // Only the D-13 index (queueId, customerId) means "already in the queue"; a (queueId, number)
+    // collision is a counter bug and must surface as a logged 500, not a false 409.
+    const target = err instanceof Prisma.PrismaClientKnownRequestError ? err.meta?.target : undefined;
+    if ((err as { code?: string }).code === "P2002" && Array.isArray(target) && target.includes("customerId")) {
       throw new ApiError(409, "DUPLICATE_ACTIVE_ENTRY", "You already have an active ticket in this queue.");
     }
     throw err;
