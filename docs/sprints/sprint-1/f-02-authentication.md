@@ -75,6 +75,8 @@ UI: none in this feature (the login form is F-08a).
 | TEST-F02-05 | AC-F02-05 | api | Logged in as customer1, `sid` value saved | POST logout; then GET /api/auth/me sending the saved `sid` | Logout 204 and cookie cleared; session row gone; me returns 401 `UNAUTHENTICATED` |
 | TEST-F02-06 | AC-F02-06 | api | Logged in as customer1; test sets that session's `expiresAt` to 1 minute ago in the DB | GET /api/auth/me | 401 `UNAUTHENTICATED`; the session row is deleted |
 | TEST-F02-06b | AC-F02-06 | unit | Session with `expiresAt` equal to now, and one 1 second later | Call the expiry check | Equal to now counts as expired; 1 second later is valid (boundary) |
+| TEST-F02-03c | AC-F02-03 | api | No user `nobody@example.test`; spy on `bcrypt.compare` | POST login with that email | 401 `INVALID_CREDENTIALS` and exactly one bcrypt compare (against a dummy hash), so response time does not reveal which emails exist |
+| TEST-F02-04b | AC-F02-04 | api | Cookie `sid=%E0%A4%A` (invalid percent-encoding) | GET /api/auth/me | 401 `UNAUTHENTICATED`, not 500 |
 
 TDD: TEST-F02-02 and TEST-F02-06 are committed failing before the implementation; their failing and passing output goes in the PR.
 
@@ -88,3 +90,4 @@ All AC implemented; TEST-F02-01..06b executed and passing at the PR head with fa
 |---|---|---|
 | 5 Nov 2026 | First version | Deliverable 1 |
 | 5 Nov 2026 | Emails stored and matched lowercase; mixed-case login added to TEST-F02-01 | Tau's review on #16 (`@unique` is case-sensitive in PostgreSQL) |
+| 5 Nov 2026 | Added TEST-F02-03c (dummy-hash compare for unknown email) and TEST-F02-04b (malformed cookie gives 401) | Tau's review on #19 |

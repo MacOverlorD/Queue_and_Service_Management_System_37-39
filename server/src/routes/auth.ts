@@ -5,6 +5,8 @@ import { sendError } from "../http/errors";
 import { SESSION_COOKIE, cookieOptions, createSession, requireAuth, sessionTtlMs } from "../auth/session";
 
 const INVALID_LOGIN = "Invalid email or password.";
+// Compared when the email is unknown, so both failure paths cost one bcrypt compare (cost 10, like the seed).
+const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 10);
 
 export function authRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -20,7 +22,8 @@ export function authRouter(prisma: PrismaClient): Router {
       // Emails are stored lowercase, and User.email is case-sensitive in PostgreSQL.
       const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
       // Unknown email and wrong password give the same answer (AC-F02-03).
-      if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      const passwordOk = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+      if (!user || !passwordOk) {
         sendError(res, 401, "INVALID_CREDENTIALS", INVALID_LOGIN);
         return;
       }

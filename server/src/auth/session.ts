@@ -51,7 +51,8 @@ export function readSessionId(req: Request): string | undefined {
   if (!header) return undefined;
   for (const part of header.split(";")) {
     const [name, ...rest] = part.trim().split("=");
-    if (name === SESSION_COOKIE) return decodeURIComponent(rest.join("="));
+    // Session ids are base64url, so no decoding is needed; a malformed value just matches no session (401).
+    if (name === SESSION_COOKIE) return rest.join("=");
   }
   return undefined;
 }
