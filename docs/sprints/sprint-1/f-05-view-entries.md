@@ -54,9 +54,9 @@ UI: none in this feature (screens are F-08a and F-08b). Data: no schema change.
 
 | Test | AC | Level | Precondition / input | Action | Expected result |
 |---|---|---|---|---|---|
-| TEST-F05-01 | AC-F05-01 | api | Seed: customer1 waiting at number 3 with two waiting ahead | GET /api/me/entries as customer1 | Only customer1 entries; waiting entry has `peopleAhead` 2; non-waiting `peopleAhead` null |
+| TEST-F05-01 | AC-F05-01 | api | Seed: customer1 waiting in queue A with one other waiting entry ahead | GET /api/me/entries as customer1 | Only customer1 entries; waiting entry has `peopleAhead` 1; non-waiting `peopleAhead` null |
 | TEST-F05-02 | AC-F05-02 | api | Entry id belongs to customer2 | GET /api/me/entries/:id as customer1; also a nonexistent id | Both 404 `NOT_FOUND`, identical bodies, no entry fields |
-| TEST-F05-03 | AC-F05-03 | api | Queue A has all six statuses | GET /api/queues/A/entries as operator1 | Only WAITING, CALLED, SERVING; sorted by number ascending |
+| TEST-F05-03 | AC-F05-03 | api | Queue A has WAITING x2, SERVING, COMPLETED, CANCELLED, NO_SHOW | GET /api/queues/A/entries as operator1 | Only the two WAITING and the SERVING entry; sorted by number ascending; final statuses absent |
 | TEST-F05-04 | AC-F05-04 | api | operator2 not assigned to A | GET /api/queues/A/entries as operator2 | 403 `FORBIDDEN_QUEUE`; no `entries` field |
 | TEST-F05-05 | AC-F05-05 | api | Responses from TEST-F05-01 and 03 | Scan JSON for `passwordHash` and `email` | Fields absent |
 

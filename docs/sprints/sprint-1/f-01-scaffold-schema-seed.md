@@ -43,7 +43,11 @@ Every later `prisma migrate dev` output must be inspected for an accidental `DRO
 - Customers: `customer1..4@example.test`.
 - Queues: `Registrar Desk` (A), `Finance Desk` (B), `Student Affairs` (C, closed).
 - Passwords: development-only values read from the seed script, stored as bcrypt hashes (cost 10 or more). Real values never in Git history beyond the dev-only demo password documented in the README.
-- Entries: queue A has one entry in each of `WAITING` (two), `CALLED`, `SERVING`, `COMPLETED`, `CANCELLED`, `NO_SHOW`, with consistent numbers, `lastNumber` set to the highest issued number, and matching `EntryEvent` rows.
+- Entries (BR-05 holds in every queue: at most one `CALLED` or `SERVING`):
+  - Queue A: `WAITING` x2, `SERVING` x1, `COMPLETED`, `CANCELLED`, `NO_SHOW`.
+  - Queue B: no active entries (used by state-changing tests in F-06).
+  - Queue C (closed): one `CALLED` entry (closed queues can still be served, BR-10).
+  - Numbers are consistent per queue, `lastNumber` equals the highest issued number, and matching `EntryEvent` rows exist.
 - `GET /api/health` returns `200 { "status": "ok", "db": "up" }`.
 
 ## 5. Acceptance criteria
@@ -51,7 +55,7 @@ Every later `prisma migrate dev` output must be inspected for an accidental `DRO
 | AC | Criterion |
 |---|---|
 | AC-F01-01 | From a clean clone, the README commands install, migrate, seed, and start server and client without manual database edits. |
-| AC-F01-02 | The seed can run twice and produces the same data without duplicates or errors. Queue A contains entries in every status. |
+| AC-F01-02 | The seed can run twice and produces the same data without duplicates or errors. Every status exists across the seed, and no queue has more than one `CALLED` or `SERVING` entry. |
 | AC-F01-03 | Inserting a second active entry for the same customer and queue directly in SQL fails with a unique violation. A final-status entry does not block a new active one. |
 | AC-F01-04 | Inserting two entries with the same `(queueId, number)` directly in SQL fails with a unique violation. |
 | AC-F01-05 | After the API process restarts, seeded and newly created data is still present. |
@@ -63,7 +67,7 @@ Every later `prisma migrate dev` output must be inspected for an accidental `DRO
 | Test | AC | Level | Precondition / input | Action | Expected result |
 |---|---|---|---|---|---|
 | TEST-F01-01 | AC-F01-01 | integration | Empty test DB | Run migrate then seed then GET /api/health | Health 200 `{status:"ok"}`; seed counts match |
-| TEST-F01-02 | AC-F01-02 | integration | Seeded DB | Run seed a second time | No error; row counts unchanged; queue A has all six statuses |
+| TEST-F01-02 | AC-F01-02 | integration | Seeded DB | Run seed a second time | No error; row counts unchanged; all six statuses exist across the seed; no queue has more than one CALLED/SERVING entry; queue B has no active entries |
 | TEST-F01-03 | AC-F01-03 | db | Customer 1 has WAITING entry in queue A | INSERT another WAITING for same customer and queue; then mark first COMPLETED and INSERT again | First insert rejected (unique violation); second insert succeeds |
 | TEST-F01-04 | AC-F01-04 | db | Entry number 1 exists in queue A | INSERT entry number 1 in queue A | Rejected (unique violation); same number in queue B succeeds |
 | TEST-F01-05 | AC-F01-05 | integration | Entry created through the DB client | Close the app, start a new app instance, query | Entry still present |

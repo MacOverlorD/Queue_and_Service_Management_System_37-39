@@ -16,8 +16,8 @@ Version 0.1, 5 Nov 2026. Maps every requirement in `docs/srs.md` to a feature or
 | FR-04 | F-04, F-08a | 1 | AC-F04-01 | TEST-F04-01 (API) | Planned |
 | FR-05 | F-04, F-08a | 1 | AC-F04-02, AC-F08a-02 | TEST-F04-02 (API+DB), TEST-F08a-02 (E2E) | Planned |
 | FR-06 | F-05, F-08a | 1 | AC-F05-01, AC-F08a-03 | TEST-F05-01 (API), TEST-F08a-03 (E2E) | Planned |
-| FR-07 | F-05, F-08b | 1 | AC-F05-03, AC-F08b-01 | TEST-F05-03 (API), TEST-F08b-01 (E2E) | Planned |
-| FR-08 | F-06, F-08b | 1 | AC-F06-01, AC-F08b-02 | TEST-F06-01 (unit+API), TEST-F08b-02 (E2E) | Planned |
+| FR-07 | F-05, F-06, F-08b | 1 | AC-F05-03, AC-F06-11, AC-F08b-01 | TEST-F05-03 (API), TEST-F06-11 (API), TEST-F08b-01 (E2E) | Planned |
+| FR-08 | F-06, F-08b | 1 | AC-F06-01, AC-F06-02, AC-F08b-02 | TEST-F06-01, TEST-F06-01b, TEST-F06-02 (unit+API), TEST-F08b-02 (E2E) | Planned |
 | FR-09 | F-06, F-08b | 1 | AC-F06-04, AC-F08b-02 | TEST-F06-04 (API), TEST-F08b-02 (E2E) | Planned |
 | FR-10 | F-06, F-08b | 1 | AC-F06-05, AC-F08b-02 | TEST-F06-05 (API+DB), TEST-F08b-02 (E2E) | Planned |
 | FR-11 | F-06 | 1 | AC-F06-08 | TEST-F06-08 (API+DB) | Planned |
@@ -40,10 +40,10 @@ Version 0.1, 5 Nov 2026. Maps every requirement in `docs/srs.md` to a feature or
 | BR-03 call next takes lowest waiting number | F-06 | 1 | AC-F06-01 | TEST-F06-01 (unit+API) | Planned |
 | BR-04 allowed transitions only | F-06 (Sprint 1 set), F-09 (Sprint 2 set) | 1, 2 | AC-F06-06 | TEST-F06-06 (unit+API) | Planned |
 | BR-05 one called/serving entry per queue | F-06, revised by F-12 | 1, 3 | AC-F06-03 | TEST-F06-03 (API) | Planned |
-| BR-06 operator acts only on assigned queues | F-03, F-05, F-06 | 1 | AC-F03-03, AC-F05-04, AC-F06-10 | TEST-F03-03, TEST-F05-04, TEST-F06-10 (API) | Planned |
+| BR-06 operator acts only on assigned queues | F-03, F-05, F-06 | 1 | AC-F03-03, AC-F05-04, AC-F06-10, AC-F06-11 | TEST-F03-03, TEST-F05-04, TEST-F06-10, TEST-F06-11 (API) | Planned |
 | BR-07 customer sees only own entries | F-05 | 1 | AC-F05-02 | TEST-F05-02 (API) | Planned |
 | BR-08 public display has no private data | F-07, F-11 | 1, 2 | AC-F07-02 | TEST-F07-02 (API) | Planned |
-| BR-09 role-restricted operations | F-03, F-04, F-06 | 1 | AC-F03-02, AC-F03-04, AC-F06-09 | TEST-F03-02, TEST-F03-04, TEST-F06-09 (API) | Planned |
+| BR-09 role-restricted operations | F-03, F-04, F-06 | 1 | AC-F03-02, AC-F03-04, AC-F06-09, AC-F06-11 | TEST-F03-02, TEST-F03-04, TEST-F06-09, TEST-F06-11 (API) | Planned |
 | BR-10 closed queue rejects joins | F-04, F-10 | 1, 2 | AC-F04-05 | TEST-F04-05 (API) | Planned |
 | BR-11 final statuses are final; rejoin allowed after | F-06, F-04 | 1 | AC-F06-07, AC-F04-04 | TEST-F06-07, TEST-F04-04 (API) | Planned |
 | BR-12 cancel by owner while waiting | F-09 | 2 | Sprint 2 contract | Sprint 2 | Not started |
@@ -65,6 +65,18 @@ Version 0.1, 5 Nov 2026. Maps every requirement in `docs/srs.md` to a feature or
 | NFR-09 Docker and GCP | R-DEP | 2 (Lab 5) | Lab 5 | Pipeline run evidence | Not started |
 | NFR-10 p95 under 500 ms with 200 entries | F-13, R-QA | 3 | Sprint 3 contract | Timing script | Not started |
 | NFR-11 80% coverage of server domain modules | R-QA | 3 | Sprint 3 | CI coverage report | Not started |
+
+### Additional tests (from the F-02, F-04, F-06, F-08b contracts)
+
+| Test | Supports | Level |
+|---|---|---|
+| TEST-F02-06b | NFR-05, FR-02 | api |
+| TEST-F04-03b | BR-01 | api |
+| TEST-F04-06b | BR-01, BR-02 (10 concurrent joins by one customer) | integration |
+| TEST-F06-01b | BR-03, FR-08 | api |
+| TEST-F06-03b | BR-05 (concurrent call-next) | integration |
+| TEST-F06-06b | BR-04 | api |
+| TEST-F08b-03b | NFR-08 (manual check, labeled manual) | manual |
 
 ## 4. Coverage check
 

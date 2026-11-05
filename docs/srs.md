@@ -146,7 +146,7 @@ Recorded in `CLAUDE.md` section 3 and repeated here as the requirement baseline.
 | ID | Question | Proposed answer | Status |
 |---|---|---|---|
 | Q-01 | Is the Student Service Center context acceptable for Theme 9? | Yes, it is a service counter with a waiting line. | Ask TA |
-| Q-02 | Counter field name: `nextNumber` (number to hand out next) or `lastNumber` (last number handed out)? Prisma `increment` returns the value after the update (Mac's review on PR #14). | Use `lastNumber`; the returned value is the new ticket number. | Decide in F-01/F-04 contracts |
+| Q-02 | Counter field name: `nextNumber` (number to hand out next) or `lastNumber` (last number handed out)? Prisma `increment` returns the value after the update (Mac's review on PR #14). | Use `lastNumber`; the returned value is the new ticket number. | Closed: `lastNumber` confirmed in the F-04 contract |
 | Q-03 | Should the public display need login? | No, it is public but returns no private data (BR-08). | Proposed |
 | Q-04 | Priority policy for Sprint 3 (for example accessibility needs)? | Define with TA before Sprint 3. | Open |
 | Q-05 | Should ticket numbers reset daily? | Not in Sprint 1 (A-05); revisit with FR-20 summaries. | Open |

@@ -14,6 +14,8 @@ Backend middleware decides who may call each route. Hiding a button is not autho
 | `requireRole(role)` | `req.user.role` equals the role | 403 `FORBIDDEN_ROLE` |
 | `requireQueueOperator` | Operator has an `OperatorQueue` row for the `:queueId` in the route | 403 `FORBIDDEN_QUEUE` (unknown queue also 403, so existence is not leaked) |
 
+`requireAuth` is implemented in F-02 (it merges first and `/me` and `/logout` need it). F-03 reuses it, adds `requireRole` and `requireQueueOperator`, and owns the route-wide 401/403 tests (TEST-F03-01..05). `GET /api/operator/queues` (operator only, lists the caller's assigned queues) is defined in F-06 (AC-F06-11).
+
 Error body always `{ "error": { "code", "message" } }`. No entity data in any 401/403 body.
 
 ## 3. Route permission matrix (Sprint 1)
@@ -24,6 +26,7 @@ Error body always `{ "error": { "code", "message" } }`. No entity data in any 40
 | POST /api/auth/login | yes | yes | yes | yes |
 | POST /api/auth/logout, GET /api/auth/me | 401 | yes | yes | yes |
 | GET /api/queues | 401 | yes | 403 | 403 |
+| GET /api/operator/queues | 401 | 403 | own assigned queues | own assigned queues |
 | POST /api/queues/:id/entries | 401 | yes | 403 | 403 |
 | GET /api/me/entries, GET /api/me/entries/:id | 401 | own only | 403 | 403 |
 | GET /api/queues/:id/entries | 401 | 403 | yes | 403 |
@@ -36,7 +39,7 @@ Error body always `{ "error": { "code", "message" } }`. No entity data in any 40
 | AC | Criterion |
 |---|---|
 | AC-F03-01 | Every protected route returns 401 `UNAUTHENTICATED` with no private data when no valid session is sent. |
-| AC-F03-02 | A customer calling an operator-only route (list queue entries, call-next, start, complete) gets 403 `FORBIDDEN_ROLE` and nothing changes. |
+| AC-F03-02 | A customer calling an operator-only route (list queue entries, call-next, start, complete, list own operator queues) gets 403 `FORBIDDEN_ROLE` and nothing changes. |
 | AC-F03-03 | An operator calling an operator route for a queue not assigned to them gets 403 `FORBIDDEN_QUEUE` and nothing changes. |
 | AC-F03-04 | An operator calling a customer-only route (join queue, list own entries) gets 403 `FORBIDDEN_ROLE`. |
 | AC-F03-05 | All 401/403 bodies match the shared error shape and contain no entity data. |

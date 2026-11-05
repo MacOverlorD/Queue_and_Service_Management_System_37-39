@@ -17,10 +17,11 @@ Contracts are written and committed **before** the code they describe. Each cont
 ## Shared conventions (all contracts)
 
 - **Error shape:** every error response is `{ "error": { "code": "<UPPER_SNAKE>", "message": "<safe text>" } }`. Messages never contain private data, stack traces or SQL.
+- **Login errors:** wrong email or password returns 401 `INVALID_CREDENTIALS`; a missing or expired session returns 401 `UNAUTHENTICATED`.
 - **Status codes:** 400 validation, 401 not authenticated, 403 authenticated but not allowed, 404 not found or not visible to the caller, 409 conflict with current state (duplicate, invalid transition).
 - **Auth:** httpOnly cookie `sid` carrying a session id (F-02). All routes are protected unless the contract says public.
 - **IDs:** database ids are integers; ticket `number` is an integer per queue.
-- **Counter field:** `Queue.lastNumber` (last number handed out). A join runs `UPDATE "Queue" SET "lastNumber" = "lastNumber" + 1 WHERE id = $1 RETURNING "lastNumber"` and the returned value is the new ticket number (open question Q-02 in the SRS, to be confirmed by Mac in the F-04 contract).
+- **Counter field:** `Queue.lastNumber` (last number handed out). A join runs `UPDATE "Queue" SET "lastNumber" = "lastNumber" + 1 WHERE id = $1 RETURNING "lastNumber"` and the returned value is the new ticket number (Q-02 closed: confirmed in the F-04 contract).
 - **Test levels:** `unit`, `api` (Supertest against the app with a real PostgreSQL test database), `db` (direct SQL), `integration` (multi-request or concurrency), `e2e` (Playwright).
 - **Test database:** a separate `queue_test` database, reset and seeded before the suite.
 
