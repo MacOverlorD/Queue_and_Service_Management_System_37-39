@@ -5,14 +5,14 @@ Contracts are written and committed **before** the code they describe. Each cont
 | Feature | Contract | Author | Reviewer | Issue |
 |---|---|---|---|---|
 | F-01 | [f-01-scaffold-schema-seed.md](f-01-scaffold-schema-seed.md) | TauForge | MacOverlorD | #3 |
-| F-02 | f-02-authentication.md (Mac's docs PR) | MacOverlorD | TauForge | #4 |
+| F-02 | [f-02-authentication.md](f-02-authentication.md) | MacOverlorD | TauForge | #4 |
 | F-03 | [f-03-authorization.md](f-03-authorization.md) | TauForge | MacOverlorD | #5 |
-| F-04 | f-04-join-queue.md (Mac's docs PR) | MacOverlorD | TauForge | #6 |
+| F-04 | [f-04-join-queue.md](f-04-join-queue.md) | MacOverlorD | TauForge | #6 |
 | F-05 | [f-05-view-entries.md](f-05-view-entries.md) | TauForge | MacOverlorD | #7 |
-| F-06 | f-06-serve-workflow.md (Mac's docs PR) | MacOverlorD | TauForge | #8 |
+| F-06 | [f-06-serve-workflow.md](f-06-serve-workflow.md) | MacOverlorD | TauForge | #8 |
 | F-07 | [f-07-public-display-api.md](f-07-public-display-api.md) | TauForge | MacOverlorD | #9 |
 | F-08a | [f-08a-customer-ui.md](f-08a-customer-ui.md) | TauForge | MacOverlorD | #10 |
-| F-08b | f-08b-operator-ui.md (Mac's docs PR) | MacOverlorD | TauForge | #11 |
+| F-08b | [f-08b-operator-ui.md](f-08b-operator-ui.md) | MacOverlorD | TauForge | #11 |
 
 ## Shared conventions (all contracts)
 
