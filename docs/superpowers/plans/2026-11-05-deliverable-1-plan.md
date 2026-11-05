@@ -1,6 +1,6 @@
 # Deliverable 1 Plan: Queue and Service Management System (Theme 9)
 
-Team: TauForge (Rattathamnoon Buranapattana, 67070501037) and MacOverlorD (Mac).
+Team: TauForge (Rattathamnoon Buranapattana, 67070501037) and MacOverlorD (Lappawat Laohasoot, 67070501039).
 Due: Sun 8 Nov 2026, 23:59, one self-contained PDF on LEB2 (Parts A-F), plus a release tag on `main`.
 Sources: `group_work_specs_v1.pdf` (master spec) and `project_deliverable_1_v1.pdf` (handout).
 

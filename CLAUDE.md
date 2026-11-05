@@ -5,7 +5,7 @@ Read this file first. It tells you what the project is, who owns what, the order
 ## 1. Project
 
 - Course: CPE 334, Group Work, Theme 9 "Queue and Service Management System".
-- Team: **TauForge** (Rattathamnoon Buranapattana, 67070501037) and **MacOverlorD** (Mac).
+- Team: **TauForge** (Rattathamnoon Buranapattana, 67070501037) and **MacOverlorD** (Lappawat Laohasoot, 67070501039).
 - Repo: https://github.com/TauForge/Queue_and_Service_Management_System_37-39
 - Current deadline: **Project Deliverable 1, Sun 8 Nov 2026, 23:59.** One self-contained PDF (Parts A-F) on LEB2, plus a release tag on `main`. Target submitting by 20:00.
 - Later: Lab 5 (CI/CD, Docker, GCP) due 15 Nov. Design now for containers, but do not build Docker or CI yet.
