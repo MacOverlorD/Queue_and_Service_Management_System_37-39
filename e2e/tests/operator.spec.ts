@@ -101,3 +101,47 @@ test("TEST-F08b-03 / AC-F08b-03: rejected action, empty state and refresh", asyn
     { timeout: 8000 },
   );
 });
+
+test("TEST-F08b-01b / AC-F08b-01: no sideways scrolling at phone width (review of #26)", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await login(page, "operator1@example.test");
+  await page.getByLabel("Queue").selectOption({ label: "Registrar Desk" });
+  const serving = page.getByRole("region", { name: "Now serving" });
+  await expect(serving).toContainText("Customer Four");
+  await expect(serving.getByRole("button", { name: "Complete" })).toBeVisible();
+
+  const overflow = await page.evaluate(() => {
+    const card = document.querySelector("main.card")!.getBoundingClientRect();
+    const row = document.querySelector("[aria-label='Now serving'] .list-item")!.getBoundingClientRect();
+    return {
+      pageScrollsSideways: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      rowSticksOut: row.right > card.right + 0.5,
+    };
+  });
+  expect(overflow).toEqual({ pageScrollsSideways: false, rowSticksOut: false });
+});
+
+test("TEST-F08b-03c / AC-F08b-03: a rejected action message sits by Call next and survives a refresh (review of #26)", async ({
+  page,
+}) => {
+  await login(page, "operator1@example.test");
+  await page.getByLabel("Queue").selectOption({ label: "Registrar Desk" });
+  await expect(page.getByRole("region", { name: "Now serving" })).toContainText("Customer Four");
+  await page.getByRole("button", { name: "Call next" }).click();
+
+  const alert = page.getByRole("alert");
+  await expect(alert).toContainText("Finish the current customer");
+  // The message is next to the button, above the waiting list, so a long list cannot push it off-screen.
+  const alertBox = (await alert.boundingBox())!;
+  const listBox = (await page.getByRole("list", { name: "Waiting list" }).boundingBox())!;
+  expect(alertBox.y + alertBox.height).toBeLessThanOrEqual(listBox.y);
+
+  // Two refresh cycles later (VITE_REFRESH_MS is 1500 ms in the suite) the message is still there.
+  await page.waitForResponse((r) => r.url().includes("/api/operator/queues"));
+  await page.waitForResponse((r) => r.url().includes("/api/operator/queues"));
+  await expect(alert).toContainText("Finish the current customer");
+
+  // The next action clears it; switching queue also clears it.
+  await page.getByLabel("Queue").selectOption({ label: "Finance Desk" });
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
