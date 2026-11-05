@@ -1,29 +1,50 @@
-import { useEffect, useState } from "react";
+import { ReactNode } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider, useAuth } from "./auth";
+import { Role } from "./api";
+import { Header } from "./components/Header";
+import { Loading } from "./components/Feedback";
+import Login, { homeFor } from "./pages/Login";
+import Queues from "./pages/Queues";
+import MyTicket from "./pages/MyTicket";
+import OperatorConsole from "./pages/OperatorConsole";
 
-type Health = { status: string; db: string };
+// Navigation only: the API still enforces every role and ownership rule.
+function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <Loading />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== role) {
+    return (
+      <main className="card">
+        <h1>Not available</h1>
+        <p>This screen is not available for your role.</p>
+      </main>
+    );
+  }
+  return <>{children}</>;
+}
 
-// F-01 placeholder: proves the UI -> API -> database path. Real screens arrive with F-08a/F-08b.
+function Home() {
+  const { user, loading } = useAuth();
+  if (loading) return <Loading />;
+  return <Navigate to={user ? homeFor(user.role) : "/login"} replace />;
+}
+
 export default function App() {
-  const [health, setHealth] = useState<Health | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/health", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
-      .then(setHealth)
-      .catch((err: Error) => setError(err.message));
-  }, []);
-
   return (
-    <main style={{ fontFamily: "system-ui", margin: "2rem" }}>
-      <h1>Queue and Service Management</h1>
-      {error && <p role="alert">API unavailable: {error}</p>}
-      {!error && !health && <p>Loading...</p>}
-      {health && (
-        <p>
-          API: {health.status}, database: {health.db}
-        </p>
-      )}
-    </main>
+    <BrowserRouter>
+      <AuthProvider>
+        <Header />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/queues" element={<RequireRole role="CUSTOMER"><Queues /></RequireRole>} />
+          <Route path="/my-ticket" element={<RequireRole role="CUSTOMER"><MyTicket /></RequireRole>} />
+          <Route path="/operator" element={<RequireRole role="OPERATOR"><OperatorConsole /></RequireRole>} />
+          <Route path="*" element={<Home />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

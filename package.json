@@ -7,6 +7,8 @@
     "dev:client": "npm --prefix client run dev",
     "test": "npm --prefix server test",
     "build:server": "npm --prefix server run build",
-    "build:client": "npm --prefix client run build"
+    "build:client": "npm --prefix client run build",
+    "install:e2e": "cd e2e && npm ci && npx playwright install chromium",
+    "test:e2e": "cd e2e && npx playwright test"
   }
 }

@@ -85,6 +85,17 @@ npm run build:client
 
 Tests never touch the development database: the test helper refuses to wipe any database whose name does not contain `test`.
 
+## End-to-end tests (Playwright)
+
+The browser journeys live in `e2e/` and run against their own API (port 3100), client (port 5273) and the `queue_test` database, which is reset and seeded first.
+
+```bash
+npm run install:e2e     # once: installs Playwright and the Chromium browser
+npm run test:e2e
+```
+
+Do not run it at the same time as `npm test`: both use `queue_test`.
+
 ## Database notes
 
 The partial unique index `QueueEntry_one_active_per_customer_queue` (one active entry per customer and queue, D-13) is raw SQL in the first migration. Prisma does not track it, so check every new migration file for an accidental `DROP INDEX` of it. TEST-F01-03 fails if the index is missing.
