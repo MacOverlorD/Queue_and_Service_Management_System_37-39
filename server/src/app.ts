@@ -2,6 +2,7 @@ import express, { Express, NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import { authRouter } from "./routes/auth";
+import { applyRouteAccess } from "./routes/access";
 import { sendError } from "./http/errors";
 
 export function createApp(prisma: PrismaClient): Express {
@@ -19,6 +20,8 @@ export function createApp(prisma: PrismaClient): Express {
   });
 
   app.use("/api/auth", authRouter(prisma));
+  // Authorization guards for every protected route (F-03). Feature routers mount after this.
+  applyRouteAccess(app, prisma);
 
   // Last resort: never leak stack traces or SQL to the client.
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
