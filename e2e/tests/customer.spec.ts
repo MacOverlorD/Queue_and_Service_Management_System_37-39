@@ -3,11 +3,17 @@ import { expect, Page, test } from "@playwright/test";
 const PASSWORD = "DemoPass123!";
 const API = "http://localhost:3100";
 
-async function login(page: Page, email: string, password = PASSWORD) {
+async function submitLogin(page: Page, email: string, password: string) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Log in" }).click();
+}
+
+// A successful login lands on the role's home screen; wait for it so later steps have a session.
+async function login(page: Page, email: string, password = PASSWORD) {
+  await submitLogin(page, email, password);
+  await page.waitForURL(/\/(queues|operator)$/);
 }
 
 // Seed: queue A = Registrar Desk (customer1 waiting #5, customer2 #6, customer4 serving #4), B = Finance Desk (empty),
@@ -17,7 +23,7 @@ test("TEST-F08a-01 / AC-F08a-01: login, logout and redirect", async ({ page }) =
   await page.goto("/my-ticket");
   await expect(page).toHaveURL(/\/login$/);
 
-  await login(page, "customer1@example.test", "wrong-password");
+  await submitLogin(page, "customer1@example.test", "wrong-password");
   await expect(page.getByRole("alert")).toContainText("Invalid email or password");
   await expect(page).toHaveURL(/\/login$/);
 

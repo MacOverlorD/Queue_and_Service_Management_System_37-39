@@ -51,3 +51,4 @@ All AC implemented; TEST-F08a-01..05 executed and passing with output in the PR;
 | Date | Change | Reason |
 |---|---|---|
 | 5 Nov 2026 | First version | Deliverable 1 |
+| 5 Nov 2026 | TEST-F08a-02/03 use customer3 (customer1 already holds a waiting ticket in queue A in the seed); the duplicate-join case in TEST-F08a-04 uses customer1. The empty state uses customer5, an extra customer with no entries that the e2e reset script adds (the seed itself is unchanged). TEST-F08a-05 uses customer4 joining queue B and the operator calling next through the API. The refresh interval is read from `VITE_REFRESH_MS` (default 10 s) so the test can use 1.5 s. | Match the seed and make the journeys deterministic |
