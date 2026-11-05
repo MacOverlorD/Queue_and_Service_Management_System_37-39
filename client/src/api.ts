@@ -13,6 +13,16 @@ export type Ticket = {
   createdAt: string;
 };
 
+export type OperatorQueue = {
+  id: number;
+  name: string;
+  isOpen: boolean;
+  waitingCount: number;
+  current: { entryId: number; number: number; status: EntryStatus } | null;
+};
+// One active entry of a queue as the operator sees it (customer name only, no email).
+export type QueueRow = { id: number; number: number; status: EntryStatus; customerName: string; createdAt: string };
+
 // Every API error has the shared shape { error: { code, message } } (Sprint 1 conventions).
 export class ApiRequestError extends Error {
   constructor(
@@ -54,5 +64,11 @@ export const api = {
   listQueues: () => request<{ queues: QueueSummary[] }>("/api/queues").then((r) => r.queues),
   joinQueue: (queueId: number) =>
     request<{ entry: Ticket }>(`/api/queues/${queueId}/entries`, { method: "POST" }).then((r) => r.entry),
+  operatorQueues: () => request<{ queues: OperatorQueue[] }>("/api/operator/queues").then((r) => r.queues),
+  queueEntries: (queueId: number) =>
+    request<{ entries: QueueRow[] }>(`/api/queues/${queueId}/entries`).then((r) => r.entries),
+  callNext: (queueId: number) => request<unknown>(`/api/queues/${queueId}/call-next`, { method: "POST" }),
+  startEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/start`, { method: "POST" }),
+  completeEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/complete`, { method: "POST" }),
   myActiveTickets: () => request<{ entries: Ticket[] }>("/api/me/entries?status=active").then((r) => r.entries),
 };

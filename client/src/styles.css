@@ -80,3 +80,16 @@ form button { margin-top: var(--space); width: 100%; }
 .empty { padding: 24px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Operator console (F-08b) */
+.field-label { display: block; margin: 0 0 4px; font-weight: 600; }
+.select {
+  width: 100%; min-height: 44px; padding: 8px 12px; font: inherit; color: var(--text);
+  border: 1px solid var(--muted); border-radius: 8px; background: #fff;
+}
+.panel { margin-top: calc(var(--space) * 1.5); display: grid; gap: 12px; }
+.panel .btn { justify-self: start; }
+/* A row may wrap on narrow screens: the Start/Complete button drops to its own line instead of overflowing */
+.panel .list-item { flex-wrap: wrap; }
+.panel .list-item > * { min-width: 0; }
+.panel .ticket-number { overflow-wrap: anywhere; }

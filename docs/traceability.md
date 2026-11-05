@@ -80,6 +80,8 @@ Version 0.1, 5 Nov 2026. Maps every requirement in `docs/srs.md` to a feature or
 | TEST-F06-03b | BR-05 (concurrent call-next) | integration |
 | TEST-F06-06b | BR-04 | api |
 | TEST-F08b-03b | NFR-08 (manual check, labeled manual) | manual |
+| TEST-F08b-01b | NFR-08, FR-07 (no sideways scrolling at 390 px) | e2e |
+| TEST-F08b-03c | NFR-08 (rejected action message stays visible next to Call next) | e2e |
 
 ## 4. Coverage check
 
