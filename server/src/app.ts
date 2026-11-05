@@ -5,6 +5,7 @@ import { authRouter } from "./routes/auth";
 import { applyRouteAccess } from "./routes/access";
 import { entriesRouter } from "./routes/entries";
 import { queuesRouter } from "./routes/queues";
+import { displayRouter } from "./routes/display";
 import { serveRouter } from "./routes/serve";
 import { sendError } from "./http/errors";
 
@@ -26,6 +27,8 @@ export function createApp(prisma: PrismaClient): Express {
   // Authorization guards for every protected route (F-03). Feature routers mount after this.
   applyRouteAccess(app, prisma);
   app.use("/api/queues", queuesRouter(prisma));
+  // Public routes (no guard): the display exposes only non-private fields (F-07).
+  app.use("/api/queues", displayRouter(prisma));
   app.use("/api", entriesRouter(prisma));
   app.use("/api", serveRouter(prisma));
 

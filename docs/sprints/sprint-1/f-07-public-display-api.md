@@ -50,3 +50,4 @@ All AC implemented; TEST-F07-01..03 executed and passing with failing-first outp
 | Date | Change | Reason |
 |---|---|---|
 | 5 Nov 2026 | First version | Deliverable 1 |
+| 5 Nov 2026 | A malformed queue id (`abc`, `0`, `-1`) also returns 404 `NOT_FOUND`, like an unknown id (added to TEST-F07-03). Public route, so no existence is leaked either way. | Contract only named unknown ids |
