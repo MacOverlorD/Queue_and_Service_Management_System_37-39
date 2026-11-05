@@ -126,7 +126,7 @@ In Sprint 1 only the first four arrows exist. Any other transition returns `409 
 
 - Schema changes go through `prisma migrate dev` (local) and `prisma migrate deploy` (test database, production).
 - The D-13 partial index is raw SQL in the first migration (see the F-01 contract). Prisma does not track it, so every new migration file is checked for an accidental `DROP INDEX` before it is committed. TEST-F01-03 inserts a second active entry directly and expects a unique violation, so a missing index fails the suite.
-- The seed is rerunnable without duplicates and creates 2 operators, 4 customers, 3 queues (one closed) and entries in every status in queue A (details in the F-01 contract). Passwords are dev-only demo values documented in the README and stored as bcrypt hashes.
+- The seed is rerunnable without duplicates and creates 2 operators, 4 customers, 3 queues (one closed) and entries in every status across the queues, with at most one `CALLED` or `SERVING` entry per queue (BR-05; details in the F-01 contract). Passwords are dev-only demo values documented in the README and stored as bcrypt hashes.
 - Data lives only in PostgreSQL; nothing is held in process memory between requests, so it survives an API restart (NFR-06).
 
 ## 4. UI structure and conventions
@@ -206,7 +206,7 @@ The per-route matrix in the F-03 contract is the test source; each cell is cover
 ## 7. Authentication and sessions (D-10)
 
 - **Credentials:** email and password; bcrypt hashes with cost 10 or more. Plaintext passwords are never stored or logged.
-- **Login:** look up the user by email and compare with bcrypt. Unknown email and wrong password return the same `401 INVALID_CREDENTIALS` message, so the response does not reveal which accounts exist.
+- **Login:** lowercase and trim the input email, look up the user by exact match (emails are stored lowercase), and compare with bcrypt. Unknown email and wrong password return the same `401 INVALID_CREDENTIALS` message, so the response does not reveal which accounts exist.
 - **Session creation:** insert a `Session` with a random 32-byte id and `expiresAt = now + SESSION_TTL_HOURS` (8). Set cookie `sid`: `HttpOnly`, `SameSite=Lax`, `Path=/`, `Max-Age` equal to the TTL, `Secure` when `NODE_ENV=production`.
 - **Current user:** `requireAuth` reads `sid`, loads the session with its user, rejects a missing, unknown or expired session with `401 UNAUTHENTICATED` (deleting an expired row), and sets `req.user = { id, name, role }`. `GET /api/auth/me` returns `{ user: { id, name, email, role } }`.
 - **Logout:** delete the `Session` row and clear the cookie. A later request with the old cookie gets `401` (NFR-05).
@@ -221,9 +221,12 @@ The per-route matrix in the F-03 contract is the test source; each cell is cover
 | `CLIENT_ORIGIN` | Browser origin allowed by CORS with credentials when the client runs on another origin | `http://localhost:5173` |
 | `SESSION_TTL_HOURS` | Session lifetime | `8` |
 | `NODE_ENV` | `production` enables the `Secure` cookie and hides error details | `development` |
+| `TEST_DATABASE_URL` | PostgreSQL connection used by the test suite (separate `queue_test` database) | see `.env.example` |
+| `SEED_PASSWORD` | Dev-only demo password the seed hashes for every seeded account | see `.env.example` |
 
 - In development the Vite dev server proxies `/api` to `http://localhost:3000`, so the cookie is first-party. `CLIENT_ORIGIN` is kept for setups without the proxy.
-- Tests use a separate database (`queue_test`) that is reset and seeded before the suite.
+- Tests use a separate database (`TEST_DATABASE_URL`, `queue_test`). Every test file calls the shared `resetAndSeed()` helper (added in F-01) before it runs, so state changed by one file (for example F-04 joins in queue A) never leaks into another file's assertions.
+- Every variable the server reads from `process.env` is listed in `.env.example` (TEST-F01-07).
 - `.env.example` holds placeholders only; `.env` files are git-ignored (NFR-07). Production secrets are never in Git or client code.
 
 ## 9. Planned deployment (built in Lab 5)
@@ -252,3 +255,4 @@ Docker and CI are not built for Deliverable 1. The design keeps the app containe
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-05 | MacOverlorD | First draft, aligned with SRS v0.1 and the F-01, F-03, F-05, F-07, F-08a contracts |
+| 0.2 | 2026-11-05 | MacOverlorD | Tau's review on #16: seed wording after BR-05 fix, per-file `resetAndSeed()`, `TEST_DATABASE_URL` and `SEED_PASSWORD`, lowercase email lookup |

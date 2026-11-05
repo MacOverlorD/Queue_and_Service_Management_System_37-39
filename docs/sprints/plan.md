@@ -23,7 +23,7 @@ Together the three sprints cover the whole product baseline: joining, calling, s
 | 0 | Docs and contracts (Issues #1, #2) | none | both | SRS, features, traceability, system SDS, this plan and all Sprint 1 contracts merged into `sprint1-staging` by Fri 6 Nov morning |
 | 1 | F-01 Scaffold, schema, migrations, seed | docs | TauForge / MacOverlorD | App and test DB start from a clean clone; D-12/D-13 constraints exist and a DB-level test proves D-13 |
 | 2 | F-02 Authentication | F-01 | MacOverlorD / TauForge | Login, logout, `GET /api/auth/me`, 8 h DB sessions, tests for valid/invalid login and expired session |
-| 3 | F-03 Authorization middleware | F-02 | TauForge / MacOverlorD | `requireRole` and `requireQueueAccess` with 401/403 tests |
+| 3 | F-03 Authorization middleware | F-02 | TauForge / MacOverlorD | `requireRole` and `requireQueueOperator` with 401/403 tests |
 | 4 | F-04 Customer joins queue | F-03 | MacOverlorD / TauForge | Atomic ticket number, duplicate active entry rejected (409), concurrent-join test |
 | 5 | F-05 Own entry view, operator queue list | F-03 | TauForge / MacOverlorD | Customer reads only own entry (others 404); operator lists only assigned queues |
 | 6 | F-06 Call next, start, complete | F-03 | MacOverlorD / TauForge | Head-of-line call, single active entry per queue, invalid transitions rejected (409), history events written |
@@ -39,7 +39,7 @@ Together the three sprints cover the whole product baseline: joining, calling, s
 - Polling instead of real-time push; no external services.
 - Features after F-03 can be written in parallel against seed data, so the two students are not blocked on each other. Each student keeps at most one open PR (D-14).
 
-**Cut order if time runs short:** UI polish first, then F-07 (not required by the Theme 9 Sprint 1 example), then reduce F-08 to the three minimal screens. Never cut auth, role-enforcement tests, the business-rule rejection tests, or the failing-then-passing TDD evidence.
+**Cut order if time runs short:** UI polish first, then F-07 (not required by the Theme 9 Sprint 1 example), then reduce F-08 to the three minimal screens. A cut is recorded, not silent: if F-07 is cut, FR-12 (API part), BR-08 and TEST-F07-01..03 are marked "Deferred" with the reason in `docs/traceability.md` in the same PR, and the cut is listed under known limitations in Part F. Never cut auth, role-enforcement tests, the business-rule rejection tests, or the failing-then-passing TDD evidence.
 
 **Labs that build on this release:** Lab 5 (Docker, CI/CD, GCP, due 15 Nov) packages `v0.1.0-sprint1`. Lab 6 (cross-team UAT, due 22 Nov) tests a recorded release. Lab work is tracked in its own Issues and kept apart from feature work.
 
@@ -116,3 +116,4 @@ flowchart LR
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-05 | MacOverlorD | First draft |
+| 0.2 | 2026-11-05 | MacOverlorD | Tau's review on #16: middleware name `requireQueueOperator`; a cut feature is recorded as Deferred in traceability |

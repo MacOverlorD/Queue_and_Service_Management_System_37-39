@@ -19,7 +19,7 @@ Request:
 ```
 
 - `email` and `password` must be non-empty strings, otherwise 400 `VALIDATION_ERROR`.
-- Look up the user by email (case-insensitive) and compare with bcrypt.
+- Emails are stored lowercase (the seed writes them lowercase). Login trims and lowercases the input email, then looks it up with an exact match on `User.email` (`@unique`, case-sensitive in PostgreSQL) and compares the password with bcrypt.
 - Unknown email and wrong password give the same response: 401 `INVALID_CREDENTIALS`, message "Invalid email or password." No session is created and no cookie is set.
 
 Response 200:
@@ -68,7 +68,7 @@ UI: none in this feature (the login form is F-08a).
 
 | Test | AC | Level | Precondition / input | Action | Expected result |
 |---|---|---|---|---|---|
-| TEST-F02-01 | AC-F02-01 | api | Seeded customer1 | POST login with the demo password | 200; body `user` has id, name, email, role `CUSTOMER` and no `passwordHash`; `Set-Cookie` has `sid`, `HttpOnly`, `SameSite=Lax`; one `Session` row for the user with `expiresAt` within 1 minute of now + 8 h |
+| TEST-F02-01 | AC-F02-01 | api | Seeded customer1 | POST login with the demo password; repeat with the email in mixed case (`Customer1@Example.TEST`) | Both 200; body `user` has id, name, email, role `CUSTOMER` and no `passwordHash`; `Set-Cookie` has `sid`, `HttpOnly`, `SameSite=Lax`; one `Session` row for the user with `expiresAt` within 1 minute of now + 8 h |
 | TEST-F02-02 | AC-F02-02 | api | Seeded customer1 | POST login with a wrong password | 401 `INVALID_CREDENTIALS`; no `Set-Cookie`; session count unchanged |
 | TEST-F02-03 | AC-F02-03 | api | No user `nobody@example.test` | POST login with that email; then bodies `{}`, `{ "email": 1, "password": true }` | Unknown email: identical status and body to TEST-F02-02. Bad bodies: 400 `VALIDATION_ERROR`. Session count unchanged |
 | TEST-F02-04 | AC-F02-04 | api | Logged-in agent for operator1; separate agent without cookie | GET /api/auth/me with each | operator1: 200 with operator1's id and role `OPERATOR`; no cookie: 401 `UNAUTHENTICATED` |
@@ -87,3 +87,4 @@ All AC implemented; TEST-F02-01..06b executed and passing at the PR head with fa
 | Date | Change | Reason |
 |---|---|---|
 | 5 Nov 2026 | First version | Deliverable 1 |
+| 5 Nov 2026 | Emails stored and matched lowercase; mixed-case login added to TEST-F02-01 | Tau's review on #16 (`@unique` is case-sensitive in PostgreSQL) |
