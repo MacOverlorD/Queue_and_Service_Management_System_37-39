@@ -70,7 +70,7 @@ Version 0.1, 5 Nov 2026. Maps every requirement in `docs/srs.md` to a feature or
 
 | Test | Supports | Level |
 |---|---|---|
-| TEST-F02-06b | NFR-05, FR-02 | api |
+| TEST-F02-06b | NFR-05, FR-02 | unit |
 | TEST-F02-03c | FR-01, NFR-01 (unknown email costs one bcrypt compare) | api |
 | TEST-F02-04b | FR-03, NFR-01 (malformed sid cookie gives 401) | api |
 | TEST-F04-03b | BR-01 | api |
