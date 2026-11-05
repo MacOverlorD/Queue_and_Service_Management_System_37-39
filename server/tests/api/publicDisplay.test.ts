@@ -87,3 +87,18 @@ describe("TEST-F07-03 / AC-F07-03: unknown queue", () => {
     }
   });
 });
+
+// Cross-feature check (F-06 + F-07). Runs last because it changes queue A.
+describe("F-06 serve workflow is visible on the public display", () => {
+  test("after the operator completes and calls next, the display moves on to the next number", async () => {
+    const op1 = await sessionCookie(prisma, "operator1@example.test");
+    const serving = await prisma.queueEntry.findFirstOrThrow({ where: { queueId: ids.a, status: "SERVING" } });
+    await request(app).post(`/api/entries/${serving.id}/complete`).set("Cookie", op1).expect(200);
+    const afterComplete = await request(app).get(`/api/queues/${ids.a}/display`);
+    expect(afterComplete.body).toMatchObject({ currentNumber: null, currentStatus: null, waitingCount: 2 });
+
+    await request(app).post(`/api/queues/${ids.a}/call-next`).set("Cookie", op1).expect(200);
+    const afterCall = await request(app).get(`/api/queues/${ids.a}/display`);
+    expect(afterCall.body).toMatchObject({ currentNumber: 5, currentStatus: "CALLED", waitingCount: 1 });
+  });
+});
