@@ -1,41 +1,14 @@
 import { Router } from "express";
 import { EntryStatus, PrismaClient } from "@prisma/client";
 import { sendError } from "../http/errors";
+import { entryView } from "../services/queues";
 
 const ACTIVE_STATUSES: EntryStatus[] = ["WAITING", "CALLED", "SERVING"];
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
 
-type EntryRow = {
-  id: number;
-  queueId: number;
-  number: number;
-  status: EntryStatus;
-  createdAt: Date;
-  queue: { name: string };
-};
-
 // Read-only views (F-05). Guards (role, queue assignment) are applied before these handlers by F-03.
 export function entriesRouter(prisma: PrismaClient): Router {
   const router = Router();
-
-  // People ahead = waiting entries with a lower number in the same queue; only meaningful while WAITING.
-  async function toCustomerEntry(row: EntryRow) {
-    const peopleAhead =
-      row.status === "WAITING"
-        ? await prisma.queueEntry.count({
-            where: { queueId: row.queueId, status: "WAITING", number: { lt: row.number } },
-          })
-        : null;
-    return {
-      id: row.id,
-      queueId: row.queueId,
-      queueName: row.queue.name,
-      number: row.number,
-      status: row.status,
-      peopleAhead,
-      createdAt: row.createdAt.toISOString(),
-    };
-  }
 
   router.get("/me/entries", async (req, res, next) => {
     try {
@@ -45,7 +18,7 @@ export function entriesRouter(prisma: PrismaClient): Router {
         include: { queue: { select: { name: true } } },
         orderBy: { createdAt: "desc" },
       });
-      res.json({ entries: await Promise.all(rows.map(toCustomerEntry)) });
+      res.json({ entries: await Promise.all(rows.map((r) => entryView(prisma, r, r.queue.name))) });
     } catch (err) {
       next(err);
     }
@@ -66,7 +39,7 @@ export function entriesRouter(prisma: PrismaClient): Router {
         sendError(res, 404, "NOT_FOUND", "Ticket not found.");
         return;
       }
-      res.json({ entry: await toCustomerEntry(row) });
+      res.json({ entry: await entryView(prisma, row, row.queue.name) });
     } catch (err) {
       next(err);
     }

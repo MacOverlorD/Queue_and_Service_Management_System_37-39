@@ -129,3 +129,20 @@ describe("TEST-F05-05 / AC-F05-05: no email or password hash in any response", (
     expect(numbersAndQueues).toEqual([`${queueA}:4`]);
   });
 });
+
+// Cross-feature check (F-04 + F-05). Runs last because it adds an entry to queue A.
+describe("F-04 join is visible through the F-05 views", () => {
+  test("a customer who joins sees the ticket, and the operator sees it last in the line", async () => {
+    const customer3 = await sessionCookie(prisma, "customer3@example.test");
+    const joined = await request(app).post(`/api/queues/${queueA}/entries`).set("Cookie", customer3);
+    expect(joined.status).toBe(201);
+
+    const mine = await request(app).get("/api/me/entries?status=active").set("Cookie", customer3);
+    const ticket = mine.body.entries.find((e: { queueId: number }) => e.queueId === queueA);
+    expect(ticket).toMatchObject({ number: joined.body.entry.number, status: "WAITING", peopleAhead: 2 });
+
+    const list = await request(app).get(`/api/queues/${queueA}/entries`).set("Cookie", cookies.operator1);
+    const numbers = list.body.entries.map((e: { number: number }) => e.number);
+    expect(numbers[numbers.length - 1]).toBe(joined.body.entry.number);
+  });
+});

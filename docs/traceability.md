@@ -75,6 +75,7 @@ Version 0.1, 5 Nov 2026. Maps every requirement in `docs/srs.md` to a feature or
 | TEST-F02-04b | FR-03, NFR-01 (malformed sid cookie gives 401) | api |
 | TEST-F04-03b | BR-01 | api |
 | TEST-F04-06b | BR-01, BR-02 (10 concurrent joins by one customer) | integration |
+| TEST-F04-03c | BR-01, BR-02 (number collision is a 500, not a false duplicate) | api |
 | TEST-F06-01b | BR-03, FR-08 | api |
 | TEST-F06-03b | BR-05 (concurrent call-next) | integration |
 | TEST-F06-06b | BR-04 | api |

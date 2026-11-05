@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { authRouter } from "./routes/auth";
 import { applyRouteAccess } from "./routes/access";
 import { entriesRouter } from "./routes/entries";
+import { queuesRouter } from "./routes/queues";
 import { sendError } from "./http/errors";
 
 export function createApp(prisma: PrismaClient): Express {
@@ -23,6 +24,7 @@ export function createApp(prisma: PrismaClient): Express {
   app.use("/api/auth", authRouter(prisma));
   // Authorization guards for every protected route (F-03). Feature routers mount after this.
   applyRouteAccess(app, prisma);
+  app.use("/api/queues", queuesRouter(prisma));
   app.use("/api", entriesRouter(prisma));
 
   // Last resort: never leak stack traces or SQL to the client.
