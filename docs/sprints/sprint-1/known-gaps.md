@@ -12,5 +12,10 @@ Recorded honestly for Deliverable 1. Nothing here is hidden by a skipped or weak
 | G-06 | GitHub Actions cannot start (account billing lock), so there is no CI yet. | CI/CD is a Lab 5 deliverable; local test results are tied to the release commit instead. | Fix billing, then build CI in Lab 5 |
 | G-07 | `FR-12` is delivered as an API only; the display screen is F-11 (Sprint 2). | No public display page yet. | Sprint 2, F-11 |
 | G-08 | Demo accounts share one development-only password (`DemoPass123!`), documented in the README. | Not for production use. | Replace per environment in Lab 5 |
+| G-09 | The `Secure` cookie flag under `NODE_ENV=production` is designed (SDS 7) but no test covers it; the suite runs in development mode. | A production misconfiguration would not be caught locally. | Check the flag on the deployed URL in Lab 5 |
+| G-10 | The 10 s default refresh (NFR-08) is not timed by any test; the journeys use `VITE_REFRESH_MS=1500`. | The default interval is verified only by reading the code. | Add a timing check in Sprint 3 hardening |
+| G-11 | `GET /api/me/entries?status=<value other than active>` returns all entries instead of a 400. | Allowed by the contract; harmless. | Validate the query in Sprint 2 if needed |
+
+Platforms verified: macOS (TauForge, clean clone) and Windows 11 with Docker Desktop (MacOverlorD, clean clone). Linux is not verified.
 
 Later-sprint requirements (FR-13..FR-20, BR-12..BR-14, NFR-09..NFR-11) are allocated in `docs/traceability.md` and are not started.
