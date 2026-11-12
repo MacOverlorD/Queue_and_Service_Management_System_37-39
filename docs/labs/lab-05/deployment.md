@@ -103,7 +103,7 @@ Merge gate: the ruleset `protect-main` is Active on `main`, the bypass list is e
 
 The first deployment was done once from Cloud Shell with `deploy/deploy.sh` (dry run first with `DRY_RUN=1`, read, then real). The script is idempotent. It creates the registry, Cloud SQL instance, database, runtime service account, secrets, migration job and service, and it generates the database password and the seed password with `openssl`. Later deployments are done only by the pipeline.
 
-Data persists in Cloud SQL, not in the container, so it survives a redeploy: a ticket created on the live URL was still there after the next pipeline deployment (run 43264223372). The result of the Cloud SQL restart check is recorded in `docs/labs/lab-05/evidence/README.md`. Cookie sessions are stored in the database. Billing is under the owner's trial credit, with the budget alert set up in Issue #30. Nothing is paused or deleted until the instructors announce the end of grading.
+Data persists in Cloud SQL, not in the container, so it survives a redeploy: a ticket created on the live URL was still there after the next pipeline deployment (run 43264223372). The Cloud SQL instance was also restarted (operation `RESTART`, 12 Nov 2026 17:10 UTC, status DONE) and the data was still there 28 minutes later; the evidence is listed in `docs/labs/lab-05/evidence/README.md`. Cookie sessions are stored in the database. Billing is under the owner's trial credit, with the budget alert set up in Issue #30. Nothing is paused or deleted until the instructors announce the end of grading.
 
 ## 6. Release procedure
 
@@ -127,5 +127,5 @@ If a deployment fails, read the failing step in the Actions log first (and the C
 
 - The repository is public, so no secret is committed: no `.env` with real values, no connection strings, no key files, and no screenshot shows one.
 - No service account key was created. The deploy account authenticates through Workload Identity Federation.
-- An AI assistant helped draft code and documents. Every cloud command that creates or changes something was read and run by a person, and no assistant changed billing, IAM or the database. The assistant ran three read-only `gcloud` checks (Cloud SQL settings, service account keys, Cloud Run revision) in the owner's Cloud Shell with his approval.
+- An AI assistant helped draft code and documents. Every cloud command that creates or changes something was read and run by a person, and no assistant changed billing, IAM or the database. The assistants ran read-only checks only: three `gcloud` commands (Cloud SQL settings, service account keys, Cloud Run revision) in the owner's Cloud Shell with his approval, and read-only Console pages in TauForge's signed-in session.
 - Cost control: budget alert, Cloud Run minimum 0 and maximum 3, smallest Cloud SQL tier, storage auto-increase off.
