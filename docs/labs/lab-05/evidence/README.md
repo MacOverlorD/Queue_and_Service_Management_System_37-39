@@ -14,7 +14,7 @@ Project number was masked in the page before capture. Nothing secret is on any i
 | R-07_run43251650798_first-pipeline-run_summary_commit33c9b21.jpg | first Deploy demo run, tag, digest, smoke test passed | Part 4 |
 | C-06_run43254088894_summary_commit61c1906_digest_smoke-passed.jpg | second run: tag = release commit 61c1906c2e9a3e5848de74717c6b176600934fe3, digest a671084e2c21f173942c5498922c34b347cc9d3dc9b6e4a114fa0984763d5ef5 | Part 4 (C-06) |
 | R-07_Actions-run-history_deploy-demo_and_CI.jpg | CI on every PR, Deploy demo on main, history kept | Part 1, Part 4 |
-| R-09_PR38_review-by-TauForge_specific-finding_and_fix.jpg | review with a real finding (NODE_ENV), author confirmed and fixed (commit d00c667) | Part 0 / Part 4 (R-09) |
+| R-09_PR38_review-by-TauForge_specific-finding_and_fix.jpg | review by TauForge with a real finding (NODE_ENV), author confirmed and fixed it (commit d00c667). Cropped to the review comment and the reply (the diff block with the local development placeholders was removed); in the quoted text of the comment the development placeholder value is covered with a bar (review of PR #47) | Part 0 / Part 4 (R-09) |
 | R-09_PR39_review-by-MacOverlorD_and_TDD-commit-order.jpg | review with specific checks; commit order kit import, failing test, fix | Part 0 / Part 4 (R-09) |
 | R-10_PR-list_label-lab5_PR38-to-PR46.jpg | all Lab 5 PRs labelled lab5; #42 closed with red check | Part 0 (R-10) |
 | R-10_Issue-list_label-lab5_issues30-to-37.jpg | 8 Lab 5 Issues, 7 closed | Part 0 (R-10, R-11) |
@@ -51,3 +51,9 @@ Notes: these images show the Cloud Shell prompt with Mac's Google account name; 
 | File | What it shows | Limits |
 |---|---|---|
 | C-02_PR42_merge-blocked_banner_needs-1-approval_CROP.png (original: "Screenshot 2026-11-12 222036.png", taken 22:20 local = 15:20 UTC, while PR #42 was open) | GitHub banner "Merging is blocked: At least 1 approving review is required by reviewers with write access." | It is a tight crop: no PR number, no failed `test-and-docker` line, no commit. The block shown is the missing approval, not the red check. For C-02 (R-06) pair it with C-02_PR42_closed_not-merged...jpg (red X) and the run 43246226299 page. If a TA needs the failing required check in the same box, retake from a full-window screenshot of the merge box, which also lists "test-and-docker" as failing, with the PR #42 title in view.
+
+## Notes from the review of PR #47 (TauForge)
+- C-05: the ticket Finance Desk #1 was created about 16:10 UTC, after the second deploy (16:01 UTC). It is a "before" for a manual redeploy and for the Cloud SQL restart, not for the second release. The PDF caption must say so. The persistence proof is still missing (re-run Deploy demo, restart `qms-pg`, reload).
+- C-03 text file is a typed summary of the run, not raw terminal output. Keep a screenshot of the terminal if a TA asks for raw output.
+- The Cloud Shell images show the prompt with Mac's Google account name and avatar (personal data, not a secret). Mac decides whether to crop before the PDF.
+- After PR #46 staging is one commit behind `main`; sync before the next release PR.
