@@ -62,7 +62,7 @@ SA_NAME="qms-runner"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 SECRET_DB_URL="qms-database-url"
-SECRET_ADMIN_PASS="qms-admin-password"
+SECRET_ADMIN_PASS="qms-seed-password"
 SECRET_DEMO_PASS="qms-demo-password"
 
 echo "=================================================================="

@@ -15,7 +15,7 @@ set -euo pipefail
 # WHAT THIS SCRIPT DOES  (one-time / manual first setup; safe to re-run)
 #   Creates every cloud resource the app needs and does the first deployment:
 #   1 enable APIs     2 Artifact Registry  3 Cloud SQL instance  4 database
-#   5 runtime SA+IAM  6 DB user + secret   7 admin password      8 demo password
+#   5 runtime SA+IAM  6 DB user + secret   7 seed password       8 demo password (unused)
 #   (secret access)   9 build image        10 migrate+seed job   11 Cloud Run service
 #   After this, routine releases are done by GitHub Actions (deploy.yml ->
 #   deploy/release.sh), which only UPDATES these resources.
@@ -119,7 +119,7 @@ IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}:l
 
 # Secret Manager secret names (values are never stored in this repo).
 SECRET_DB_URL="qms-database-url"
-SECRET_ADMIN_PASS="qms-admin-password"
+SECRET_ADMIN_PASS="qms-seed-password"   # holds SEED_PASSWORD for the seed job (kit variable name kept)
 SECRET_DEMO_PASS="qms-demo-password"
 
 GENERATED_ADMIN_PASSWORD=""
@@ -172,7 +172,7 @@ fi
 # ==============================================================================
 if [ "$DRY_RUN" = "1" ]; then
   run_cmd gcloud sql instances describe "$SQL_INSTANCE" --project "$PROJECT_ID"
-  run_cmd gcloud sql instances create "$SQL_INSTANCE" --database-version=POSTGRES_16 --edition=enterprise --tier=db-f1-micro --region="$REGION" --storage-size=10GB --storage-type=SSD --backup-start-time=03:00 --project "$PROJECT_ID"
+  run_cmd gcloud sql instances create "$SQL_INSTANCE" --database-version=POSTGRES_16 --edition=enterprise --tier=db-f1-micro --region="$REGION" --no-storage-auto-increase --storage-size=10GB --storage-type=SSD --backup-start-time=03:00 --project "$PROJECT_ID"
 else
   if ! gcloud sql instances describe "$SQL_INSTANCE" --project "$PROJECT_ID" >/dev/null 2>&1; then
     run_cmd gcloud sql instances create "$SQL_INSTANCE" \
@@ -180,6 +180,7 @@ else
       --edition=enterprise \
       --tier=db-f1-micro \
       --region="$REGION" \
+      --no-storage-auto-increase \
       --storage-size=10GB \
       --storage-type=SSD \
       --backup-start-time=03:00 \
@@ -269,7 +270,7 @@ fi
 # 8. Optional Demo Password in Secret Manager when --demo is passed
 #    Only used to seed demo users (./deploy/deploy.sh --demo).
 # ==============================================================================
-JOB_SECRETS="DATABASE_URL=${SECRET_DB_URL}:latest,ADMIN_PASSWORD=${SECRET_ADMIN_PASS}:latest"
+JOB_SECRETS="DATABASE_URL=${SECRET_DB_URL}:latest,SEED_PASSWORD=${SECRET_ADMIN_PASS}:latest"
 if [ "$SEED_DEMO_DATA" = "true" ]; then
   if [ "$DRY_RUN" = "1" ]; then
     run_cmd gcloud secrets describe "$SECRET_DEMO_PASS" --project "$PROJECT_ID"
@@ -378,9 +379,7 @@ printf '%s\n' "=================================================================
 printf '%s\n' "Deployment Completed!"
 printf '%s\n' "Service URL    : ${SERVICE_URL}"
 printf '%s\n' "Health Check   : ${SERVICE_URL}/api/health"
-printf '%s\n' "Readiness Check: ${SERVICE_URL}/api/ready"
-printf '%s\n' "Admin Email    : john.smith@example.com (mustChangePassword: true)"
-printf '%s\n' "Admin Password : Stored in Secret Manager: ${SECRET_ADMIN_PASS} (not printed)."
+printf '%s\n' "Seed password  : Stored in Secret Manager: ${SECRET_ADMIN_PASS} (not printed)."
 if [ "$SEED_DEMO_DATA" = "true" ]; then
   printf '%s\n' "Demo Password  : Stored in Secret Manager: ${SECRET_DEMO_PASS} (not printed)."
 fi
