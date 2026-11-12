@@ -26,7 +26,7 @@ Changes from the starter kit:
 - The smoke test checks `/api/health` (database must be `up`) and `/`. The kit's optional token login check was removed because this API uses a session cookie.
 - The client has no unit tests, so CI builds it instead of testing it.
 - Cloud SQL storage auto-increase is off (`--no-storage-auto-increase`).
-- The default Compute Engine service account has the role Cloud Build Service Account (`roles/cloudbuild.builds.builder`) on the project. New projects build images with that account, and the first `gcloud builds submit` in `deploy.sh` failed with 403 `storage.objects.get` until we granted it. We then re-ran `deploy.sh`.
+- One IAM change that is not in the guide: the first `gcloud builds submit` failed with 403 `storage.objects.get` for the compute default service account (new projects build with it). We granted that account `roles/cloudbuild.builds.builder` on the project and ran `deploy.sh` again, which skipped the resources that already existed.
 
 ## 2. Environment variables
 
@@ -45,7 +45,7 @@ All configuration comes from environment variables. `.env.example` lists them wi
 
 ## 3. Build, test, run, migrate, seed
 
-Prerequisites: Node.js 24 (the version CI and the image use), Docker with Compose, and for tests a local PostgreSQL.
+Prerequisites: Node.js 24 (the version CI and the image use), Docker with Compose, and a running PostgreSQL for migrations and tests (`docker compose up -d db` starts one).
 
 Run everything from a clean clone with Docker (check C-03):
 
@@ -64,9 +64,9 @@ Compose starts `db` (PostgreSQL), `migrate` (runs `prisma migrate deploy` and th
 Without Docker:
 
 ```bash
+docker compose up -d db
 cp .env.example server/.env
 npm run install:all
-docker compose up -d db                    # or any local PostgreSQL; it must be running first
 cd server && npx prisma migrate deploy && npm run prisma:seed
 npm test                                      # server tests, needs the test database
 cd ../client && npm run build
@@ -96,14 +96,14 @@ Merge gate: the ruleset `protect-main` is Active on `main`, the bypass list is e
 | Artifact Registry | repository `qms`, image `qms` (tag = full commit SHA) |
 | Secrets | `qms-database-url`, `qms-seed-password` (names only, values are never read or shown) |
 | Runtime service account | `qms-runner`: Cloud SQL Client, and access to the two secrets only |
-| Default compute service account | Cloud Build Service Account (`roles/cloudbuild.builds.builder`), granted once so the first image build works (see section 1) |
 | Deploy service account | `qms-deployer`: Cloud Run Developer, Artifact Registry Writer on the `qms` repository, Service Account User on `qms-runner`. It has no key file |
+| Compute default service account | `roles/cloudbuild.builds.builder`, added by hand so that Cloud Build can read the uploaded source and push the image in the first deployment |
 | Workload Identity | pool `github-actions`, provider `github-main` (keyless login of the deploy account from GitHub Actions) |
 | GitHub environment | `demo`, deployments allowed only from branch `main`, variables `GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT` |
 
 The first deployment was done once from Cloud Shell with `deploy/deploy.sh` (dry run first with `DRY_RUN=1`, read, then real). The script is idempotent. It creates the registry, Cloud SQL instance, database, runtime service account, secrets, migration job and service, and it generates the database password and the seed password with `openssl`. Later deployments are done only by the pipeline.
 
-Data persists in Cloud SQL, not in the container, so it survives a redeploy (checked on the live service across revision `qms-00004-rgp`). Cookie sessions are stored in the database. Billing is under the owner's trial credit, with the budget alert set up in Issue #30. Nothing is paused or deleted until the instructors announce the end of grading.
+Data persists in Cloud SQL, not in the container, so it survives a redeploy: a ticket created on the live URL was still there after the next pipeline deployment (run 43264223372). The result of the Cloud SQL restart check is recorded in `docs/labs/lab-05/evidence/README.md`. Cookie sessions are stored in the database. Billing is under the owner's trial credit, with the budget alert set up in Issue #30. Nothing is paused or deleted until the instructors announce the end of grading.
 
 ## 6. Release procedure
 
@@ -127,5 +127,5 @@ If a deployment fails, read the failing step in the Actions log first (and the C
 
 - The repository is public, so no secret is committed: no `.env` with real values, no connection strings, no key files, and no screenshot shows one.
 - No service account key was created. The deploy account authenticates through Workload Identity Federation.
-- An AI assistant helped draft code and documents. Every command that changes a cloud resource was read and run by a person. The assistants ran only read-only checks (`describe` and `list` commands and read-only Console pages) after the owner approved them, and no assistant changed billing, IAM or the database.
+- An AI assistant helped draft code and documents. Every cloud command that creates or changes something was read and run by a person, and no assistant changed billing, IAM or the database. The assistant ran three read-only `gcloud` checks (Cloud SQL settings, service account keys, Cloud Run revision) in the owner's Cloud Shell with his approval.
 - Cost control: budget alert, Cloud Run minimum 0 and maximum 3, smallest Cloud SQL tier, storage auto-increase off.
