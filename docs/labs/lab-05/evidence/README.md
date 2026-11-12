@@ -73,4 +73,13 @@ Taken with Claude in Chrome in TauForge's signed-in Google Cloud session. Nothin
 | P3_console_artifactregistry_qms_image-tags-are-commit-shas.jpg | image tags are full commit SHAs | Part 4 |
 | P4_live_login_page_shows_new_line.png | public `/login` shows the line added in PR #46 | Part 4 |
 
-Still to add after the restart check: C-05 after the redeploy and after the Cloud SQL restart, and C-04 with the full window.
+
+
+## Restart and after-restart evidence (12 Nov 2026, UTC)
+| File | Proves | Use in PDF |
+|---|---|---|
+| C-05_restart_operation_DONE_17-10_UTC_account-masked.png | `gcloud sql operations list --instance=qms-pg` shows operation `RESTART`, 17:10:28 to 17:10:38, STATUS DONE, no error. The Cloud Shell account name is blacked out. | Part 3 (C-05) |
+| P3_live_after-restart_queues_17-38UTC.png | Public URL, signed in as Customer One at 17:38 UTC, 28 minutes after the restart: Finance Desk still shows 1 waiting, Registrar Desk 2 waiting | Part 3 (C-04, C-05) |
+| P3_live_after-restart_duplicate-join-rejected_17-38UTC.png | Same session seconds later: joining again is rejected with "You already have an active ticket in this queue" (D-05), so the earlier ticket is still stored | Part 3 (C-04, C-05) |
+
+Result of the Cloud SQL restart check (C-05): the restart finished at 17:10:38 UTC and the data was still there at 17:38 UTC. These two live-site captures were made by MacOverlorD and keep only the page content (no address bar); the URL is in the PDF caption.
