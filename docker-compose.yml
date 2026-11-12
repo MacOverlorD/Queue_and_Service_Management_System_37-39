@@ -1,4 +1,11 @@
-# Local development database only. Docker packaging of the app comes in Lab 5.
+# Local run of the same image Cloud Run uses: docker compose up --build  ->  http://localhost:3000
+# Local values only. Real secrets never go in this file.
+x-app-env: &app-env
+  DATABASE_URL: postgresql://queue_dev:queue_dev_password@db:5432/queue_dev
+  SEED_PASSWORD: ${SEED_PASSWORD:-DemoPass123!}
+  # The image sets NODE_ENV=production; override it so the session cookie is not Secure and works over plain http on any browser.
+  NODE_ENV: development
+
 services:
   db:
     image: postgres:17
@@ -10,6 +17,29 @@ services:
       - "5432:5432"
     volumes:
       - queue_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U queue_dev -d queue_dev"]
+      interval: 3s
+      retries: 20
+
+  migrate:
+    build: .
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run prisma:seed"]
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      <<: *app-env
+      CLIENT_ORIGIN: http://localhost:3000
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   queue_db_data:

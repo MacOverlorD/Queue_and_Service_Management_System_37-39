@@ -6,9 +6,9 @@ Read this file first. It tells you what the project is, who owns what, the order
 
 - Course: CPE 334, Group Work, Theme 9 "Queue and Service Management System".
 - Team: **TauForge** (Rattathamnoon Buranapattana, 67070501037) and **MacOverlorD** (Lappawat Laohasoot, 67070501039).
-- Repo: https://github.com/TauForge/Queue_and_Service_Management_System_37-39
+- Repo: https://github.com/MacOverlorD/Queue_and_Service_Management_System_37-39
 - Current deadline: **Project Deliverable 1, Sun 8 Nov 2026, 23:59.** One self-contained PDF (Parts A-F) on LEB2, plus a release tag on `main`. Target submitting by 20:00.
-- Later: Lab 5 (CI/CD, Docker, GCP) due 15 Nov. Design now for containers, but do not build Docker or CI yet.
+- Lab 5 (Docker, CI/CD, GCP) is in progress, due 15 Nov. Plan: `LAB5_PLAN_V2.md` (kept outside the repo); Issues carry the label `lab5`.
 - Source specs (not in repo): `group_work_specs_v1.pdf` and `project_deliverable_1_v1.pdf`. Full plan: `docs/superpowers/plans/2026-11-05-deliverable-1-plan.md`.
 
 ## 2. What we build in Sprint 1

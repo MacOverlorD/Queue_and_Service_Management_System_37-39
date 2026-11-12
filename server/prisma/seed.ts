@@ -69,6 +69,9 @@ const PATH: Record<EntryStatus, EntryStatus[]> = {
 // Rerunnable: users, queues and assignments are upserted; entries are created only
 // for queues that have none yet, so running the seed twice changes nothing.
 export async function seedDatabase(prisma: PrismaClient): Promise<void> {
+  if (process.env.NODE_ENV === "production" && !process.env.SEED_PASSWORD) {
+    throw new Error("SEED_PASSWORD must be set when NODE_ENV=production");
+  }
   const password = process.env.SEED_PASSWORD ?? DEFAULT_SEED_PASSWORD;
   const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
 
