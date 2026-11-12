@@ -38,6 +38,7 @@ export default function Login() {
   return (
     <main className="card card-narrow">
       <h1>Log in</h1>
+      <p className="muted">Queue and Service Management System</p>
       <form onSubmit={onSubmit} noValidate>
         <ErrorBanner message={error} />
         <label htmlFor="email">Email</label>
