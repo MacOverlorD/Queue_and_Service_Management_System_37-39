@@ -104,7 +104,7 @@ for MODE in first_run rerun partial job-fail demo; do
   args=()
   if [ "$MODE" = demo ]; then args+=(--demo); fi
   result=0
-  bash "$DEPLOY_SCRIPT" "${args[@]}" > "$TEST_STATE_DIR/output" 2>&1 || result=$?
+  bash "$DEPLOY_SCRIPT" ${args[@]+"${args[@]}"} > "$TEST_STATE_DIR/output" 2>&1 || result=$?
   expected=0
   if [ "$MODE" = job-fail ]; then expected=1; fi
   if [ "$result" -ne "$expected" ]; then
@@ -121,9 +121,14 @@ for MODE in first_run rerun partial job-fail demo; do
   if grep -q '^projects add-iam-policy-binding .*roles/secretmanager.secretAccessor' "$GCLOUD_LOG"; then
     echo 'FAIL: runtime has project-wide secret access'; exit 1
   fi
-  for secret in qms-database-url qms-admin-password; do
+  for secret in qms-database-url qms-seed-password; do
     grep -q "^secrets add-iam-policy-binding $secret .*roles/secretmanager.secretAccessor" "$GCLOUD_LOG"
   done
+  # The migration job seeds with SEED_PASSWORD from Secret Manager, never a default.
+  grep -q '^run jobs deploy .*--set-secrets DATABASE_URL=qms-database-url:latest,SEED_PASSWORD=qms-seed-password:latest' "$GCLOUD_LOG"
+  if grep -q 'qms-admin-password' "$GCLOUD_LOG"; then
+    echo 'FAIL: old admin secret name still used'; exit 1
+  fi
   if [ "$MODE" = demo ]; then
     grep -q '^secrets add-iam-policy-binding qms-demo-password ' "$GCLOUD_LOG"
   elif grep -q '^secrets add-iam-policy-binding qms-demo-password ' "$GCLOUD_LOG"; then
@@ -132,6 +137,7 @@ for MODE in first_run rerun partial job-fail demo; do
   case "$MODE" in
     first_run)
       grep -q -- '--edition=enterprise' "$GCLOUD_LOG"
+      grep -q -- '--no-storage-auto-increase' "$GCLOUD_LOG"
       grep -q '^sql users create ' "$GCLOUD_LOG" ;;
     partial) grep -q '^sql users set-password ' "$GCLOUD_LOG" ;;
     rerun)
