@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import express, { Express, NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
@@ -9,7 +11,10 @@ import { displayRouter } from "./routes/display";
 import { serveRouter } from "./routes/serve";
 import { sendError } from "./http/errors";
 
-export function createApp(prisma: PrismaClient): Express {
+// Production: one container serves the API and the built client. cwd is server/ in dev, tests and the image.
+const DEFAULT_CLIENT_DIST = path.resolve(process.cwd(), "../client/dist");
+
+export function createApp(prisma: PrismaClient, clientDist: string = DEFAULT_CLIENT_DIST): Express {
   const app = express();
   app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173", credentials: true }));
   app.use(express.json());
@@ -31,6 +36,12 @@ export function createApp(prisma: PrismaClient): Express {
   app.use("/api/queues", displayRouter(prisma));
   app.use("/api", entriesRouter(prisma));
   app.use("/api", serveRouter(prisma));
+
+  // Built client (only when present): static files, then index.html for client routes. /api never falls back.
+  if (existsSync(path.join(clientDist, "index.html"))) {
+    app.use(express.static(clientDist));
+    app.get(/^\/(?!api(\/|$)).*/, (_req, res) => res.sendFile(path.join(clientDist, "index.html")));
+  }
 
   // Last resort: never leak stack traces or SQL to the client.
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
