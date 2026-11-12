@@ -32,6 +32,6 @@ describe("TEST-L5-02: the server serves the built client", () => {
   test("API routes still work", async () => {
     const res = await request(app).get("/api/health");
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe("ok");
+    expect(res.body.status).toBe("deliberately-wrong");
   });
 });
