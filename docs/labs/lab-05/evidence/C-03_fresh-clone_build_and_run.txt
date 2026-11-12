@@ -1,0 +1,16 @@
+C-03 (R-01, R-02): fresh clone builds and runs with only .env.example values
+Date: 2026-11-12   Tested commit: d4599ac (sprint1-staging, merge of PR #38)
+
+Commands
+  git clone --branch sprint1-staging https://github.com/MacOverlorD/Queue_and_Service_Management_System_37-39.git
+  cd <clone> && cp .env.example .env
+  docker compose up --build -d
+
+Result
+  db       running (healthy)
+  migrate  exited 0   (prisma migrate deploy + seed)
+  app      running
+  GET /api/health         -> {"status":"ok","db":"up"}
+  GET /                   -> 200 (built client)
+  POST /api/auth/login    -> 200 (seeded operator)
+Cleanup: docker compose down -v, clone deleted.
