@@ -57,3 +57,20 @@ Notes: these images show the Cloud Shell prompt with Mac's Google account name; 
 - C-03 text file is a typed summary of the run, not raw terminal output. Keep a screenshot of the terminal if a TA asks for raw output.
 - The Cloud Shell images show the prompt with Mac's Google account name and avatar (personal data, not a secret). Mac decides whether to crop before the PDF.
 - After PR #46 staging is one commit behind `main`; sync before the next release PR.
+
+## Added by TauForge (Console and live site, 13 Nov 2026, read only)
+Taken with Claude in Chrome in TauForge's signed-in Google Cloud session. Nothing was clicked that changes a resource and no secret value was opened. The project number is blacked out where the Console shows it (Cloud Run service URL, default compute account), and personal accounts are blacked out on the IAM page.
+
+| File | Proves | Use in PDF |
+|---|---|---|
+| P3_console_cloudrun_qms_revisions.png | Cloud Run service `qms`, revisions 00001 to 00004, newest deployed by `qms-deployer` with 100% traffic | Part 3 |
+| P3_console_cloudrun_qms_scaling_min0_max3.png | minimum 0 and maximum 3 instances (cost control) | Part 3 |
+| P3_console_cloudrun_job_qms-migrate_executions.jpg | migration job ran 4 times, all succeeded | Part 3 |
+| P3_console_cloudsql_qms-pg_overview.jpg | instance `qms-pg`, PostgreSQL 16.15, running | Part 3 |
+| P3_console_cloudsql_qms-pg_databases.jpg | database `qms` exists | Part 3 |
+| P3_console_secretmanager_names-only.png | secret names only, no value opened | Part 3 |
+| P3_console_iam_service-accounts_least-privilege_people-masked.png | `qms-runner` Cloud SQL Client only, `qms-deployer` Cloud Run Developer | Part 3 |
+| P3_console_artifactregistry_qms_image-tags-are-commit-shas.jpg | image tags are full commit SHAs | Part 4 |
+| P4_live_login_page_shows_new_line.png | public `/login` shows the line added in PR #46 | Part 4 |
+
+Still to add after the restart check: C-05 after the redeploy and after the Cloud SQL restart, and C-04 with the full window.
