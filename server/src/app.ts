@@ -36,6 +36,8 @@ export function createApp(prisma: PrismaClient, clientDist: string = DEFAULT_CLI
   app.use("/api/queues", displayRouter(prisma));
   app.use("/api", entriesRouter(prisma));
   app.use("/api", serveRouter(prisma));
+  // Any other /api path keeps the shared JSON error shape instead of Express's HTML 404 (Lab 6 UAT #58).
+  app.use("/api", (_req, res) => sendError(res, 404, "NOT_FOUND", "Not found."));
 
   // Built client (only when present): static files, then index.html for client routes. /api never falls back.
   if (existsSync(path.join(clientDist, "index.html"))) {
