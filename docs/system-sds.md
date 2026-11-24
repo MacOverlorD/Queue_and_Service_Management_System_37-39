@@ -1,12 +1,14 @@
 # System-Level Software Design Specification (SDS)
 
 Queue and Service Management System, CPE 334 Theme 9.
-Author: MacOverlorD (Lappawat Laohasoot). Reviewer: TauForge (Rattathamnoon Buranapattana).
-Version 0.1, 5 Nov 2026. Requirement IDs (FR, BR, NFR) refer to `docs/srs.md`; feature IDs to `docs/features.md`; decisions D-01 to D-14 to `CLAUDE.md`.
+Author: MacOverlorD (Lappawat Laohasoot), updated for Deliverable 2 by TauForge (Rattathamnoon Buranapattana). Reviewer: the other student for each change.
+Version 0.3, 25 Nov 2026 (current for release candidate `v0.2.0-rc1`). Requirement IDs (FR, BR, NFR) refer to `docs/srs.md`; feature IDs to `docs/features.md`; decisions D-01 to D-14 to `CLAUDE.md` and D-15 to D-21 to `docs/srs.md` section 8.1.
+
+**Status legend used in this document:** parts marked *(delivered)* are implemented on `main` at `v0.2.0-rc1`; parts marked *(planned)* are designed in a contract but not built (F-12 counters and priority, Sprint 3 hardening).
 
 ## 1. Purpose and scope
 
-This document defines the architecture, data model, UI and API conventions, access control, configuration and planned deployment for the whole product. Feature-level details (exact request and response fields, AC, tests) live in the feature contracts under `docs/sprints/sprint-1/`. Where a contract is more specific, the contract wins and this document is updated in the same PR.
+This document defines the architecture, data model, UI and API conventions, access control, configuration and planned deployment for the whole product. Feature-level details (exact request and response fields, AC, tests) live in the feature contracts under `docs/sprints/sprint-1/`, `sprint-2/` and `sprint-3/`. Where a contract is more specific, the contract wins and this document is updated in the same PR.
 
 ## 2. Architecture and stack
 
@@ -24,7 +26,7 @@ flowchart LR
   B[Browser: React client] -- "JSON over HTTP, cookie sid" --> R[Express routes]
   subgraph API["server/ (one process)"]
     R --> M[Middleware: requireAuth, requireRole, requireQueueOperator, validation]
-    M --> S[Services: auth, queues, entries, display]
+    M --> S[Services: auth, queues, serve, display, summary]
     S --> P[Prisma client]
   end
   P -- SQL --> DB[(PostgreSQL)]
@@ -43,7 +45,11 @@ flowchart LR
 | Closed queue rejects joins, BR-10 (409) | join service (F-04) | `Queue.isOpen` in the same `UPDATE` |
 | Head of line only, BR-03 | call-next service (F-06, D-07) | row lock on `Queue` |
 | Allowed transitions only, BR-04, BR-11 (409) | conditional update on current status (F-06) | `UPDATE ... WHERE status = <expected>` |
-| One called or serving entry per queue, BR-05 (409) | call-next service (F-06, D-08) | row lock on `Queue` |
+| One called or serving entry per queue, BR-05 (409) | call-next service (F-06, D-08) | row lock on `Queue` (per counter by a partial unique index in F-12, *planned*) |
+| Cancel only by the owner and only while waiting, BR-12 (404 / 409) | cancel service (F-09): lookup by `id` and `customerId`, conditional update | row lock on `Queue`, `UPDATE ... WHERE status = 'WAITING'` |
+| No-show only on a called entry by an assigned operator, BR-13 (403 / 409) | `transition` with action `noShow` behind `operatorOnEntryParam` (F-09) | `UPDATE ... WHERE status = 'CALLED'` |
+| Open and close only by an assigned operator, BR-09, BR-10 (403 / 400) | `PATCH /api/queues/:id` behind `operatorOnQueueParam`, body exactly `{ isOpen }` (F-10) | `Queue.isOpen` |
+| Summary only for an assigned operator, day window in Bangkok time, D-19 (403 / 400) | summary service (F-13) reads `EntryEvent` | `EntryEvent.at`, `toStatus` |
 | Public display has no private data, BR-08 | display service selects only safe fields (F-07) | none |
 
 The UI may hide controls the user cannot use, but that is a convenience. Every rule above is checked on the server and covered by an api or db test.
@@ -52,17 +58,17 @@ The UI may hide controls the user cannot use, but that is a convenience. Every r
 
 ```
 client/                React + TypeScript + Vite
-  src/pages/           Login, Queues, MyTicket (F-08a), OperatorConsole (F-08b)
+  src/pages/           Login, Queues, MyTicket (F-08a), OperatorConsole (F-08b, F-10), Display (F-11)
   src/api.ts           fetch wrapper: credentials "include", parses the error shape
 server/
   prisma/              schema.prisma, migrations/, seed.ts
   src/app.ts           Express app without listen (imported by tests)
   src/index.ts         starts the server
   src/middleware/      requireAuth, requireRole, requireQueueOperator, validation, error handler
-  src/routes/          auth, queues, entries, operator, display, health
-  src/services/        business logic, one file per area
+  src/routes/          auth, queues, entries, serve (operator, cancel, no-show, open/close), display, summary, access (route permission matrix)
+  src/services/        business logic, one file per area (queues, serve, summary)
   tests/               unit, api, db, integration tests
-e2e/                   Playwright journeys
+e2e/                   Playwright journeys (customer, operator, cancel-no-show, queue-control, display)
 docker-compose.yml     PostgreSQL for local development only
 ```
 
@@ -79,9 +85,20 @@ Field names follow the F-01 contract.
 | `Queue` | `id`, `name`, `serviceName`, `lastNumber` (default 0), `isOpen` (default true) | `name` unique. `lastNumber` is the last ticket number handed out (SRS Q-02, resolved in the F-04 contract). |
 | `OperatorQueue` | `userId`, `queueId` | Composite primary key, both FK. Only `OPERATOR` users are linked (seed). |
 | `QueueEntry` | `id`, `queueId`, `customerId`, `number`, `status`, `createdAt`, `calledAt`, `servingAt`, `completedAt`, `handledByOperatorId` | `status` is `WAITING`, `CALLED`, `SERVING`, `COMPLETED`, `CANCELLED` or `NO_SHOW` (the last two are reachable only from Sprint 2). `@@unique([queueId, number])`. Partial unique index on `(queueId, customerId)` where status is active (D-13). |
-| `EntryEvent` | `id`, `entryId`, `fromStatus` (null for join), `toStatus`, `actorId`, `at` | Append-only history (FR-11), written in the same transaction as each status change. Source for Sprint 3 summaries (FR-20). |
+| `EntryEvent` | `id`, `entryId`, `fromStatus` (null for join), `toStatus`, `actorId`, `at` | Append-only history (FR-11), written in the same transaction as each status change. Source of the service summaries (FR-20, F-13, *delivered*). |
 
-Active statuses are `WAITING`, `CALLED`, `SERVING`. Final statuses are `COMPLETED`, `CANCELLED`, `NO_SHOW` (BR-11).
+Active statuses are `WAITING`, `CALLED`, `SERVING`. Final statuses are `COMPLETED`, `CANCELLED`, `NO_SHOW` (BR-11). No schema change was made in Sprint 2 or for F-13: `CANCELLED`, `NO_SHOW` and `Queue.isOpen` existed from F-01.
+
+#### Planned data changes (F-12, *planned*)
+
+| Change | Detail |
+|---|---|
+| `Counter` | `id`, `queueId` (FK, cascade), `name`; `@@unique([queueId, name])`. Every existing queue gets "Counter 1" by the migration; Student Affairs is seeded with a second counter. |
+| `QueueEntry.counterId` | Nullable FK, set when the entry is called. |
+| Partial unique index | On `("counterId")` where status is `CALLED` or `SERVING`: BR-05 per counter, enforced by PostgreSQL (closes known gap G-02, answers SDS-Q1). |
+| `QueueEntry.priority`, `priorityMarkedById` | Enum `NORMAL` / `PRIORITY` (default `NORMAL`) and the marking operator (F-12b, BR-14). |
+
+The migration is additive and keeps every ticket number and status.
 
 ### 3.2 Relationships
 
@@ -107,19 +124,23 @@ stateDiagram-v2
   WAITING --> CALLED: operator calls next (F-06)
   CALLED --> SERVING: operator starts (F-06)
   SERVING --> COMPLETED: operator completes (F-06)
-  WAITING --> CANCELLED: customer cancels (F-09, Sprint 2)
-  CALLED --> NO_SHOW: operator marks no-show (F-09, Sprint 2)
+  WAITING --> CANCELLED: customer cancels (F-09)
+  CALLED --> NO_SHOW: operator marks no-show (F-09)
   COMPLETED --> [*]
   CANCELLED --> [*]
   NO_SHOW --> [*]
 ```
 
-In Sprint 1 only the first four arrows exist. Any other transition returns `409 INVALID_TRANSITION` and leaves the entry unchanged (BR-04, BR-11).
+Sprint 1 had the first four arrows; Sprint 2 added cancel and no-show (F-09, *delivered*). The whole table lives in one pure function, `nextStatus(current, action)`, with the actions `start`, `complete`, `noShow` and `cancel`. Any other transition returns `409 INVALID_TRANSITION` and leaves the entry unchanged (BR-04, BR-11).
 
 ### 3.4 Concurrency design
 
 - **Join (F-04, D-12):** one transaction runs `UPDATE "Queue" SET "lastNumber" = "lastNumber" + 1 WHERE id = $1 AND "isOpen" = true RETURNING "lastNumber"` and inserts the entry with the returned number. The `UPDATE` takes a row lock, so concurrent joins on the same queue get different, consecutive numbers (NFR-03). Zero rows means the queue is closed or missing. A duplicate active entry violates the partial unique index; the service maps that error to `409 DUPLICATE_ACTIVE_ENTRY` and the whole transaction rolls back, so the counter does not advance. Numbers are never reused (D-09).
 - **Call next (F-06, D-07, D-08):** one transaction locks the queue row (`SELECT id FROM "Queue" WHERE id = $1 FOR UPDATE`), returns `409 QUEUE_BUSY` if an entry is `CALLED` or `SERVING`, picks the `WAITING` entry with the lowest number, sets it to `CALLED`, and writes an `EntryEvent`. The lock serializes concurrent call-next requests on one queue.
+- **Cancel (F-09, D-15, D-16):** one transaction finds the entry by `id` and `customerId` (a missing or foreign entry is `404`), locks the same queue row that call-next locks, then runs `UPDATE ... SET status = 'CANCELLED' WHERE id = $1 AND "customerId" = $2 AND status = 'WAITING'` and writes the `EntryEvent`. Because both lock the queue row, a cancel and a call-next on the same entry cannot both succeed (tested for 10 rounds, TEST-F09-11).
+- **No-show (F-09):** the same conditional update as start and complete, from `CALLED` to `NO_SHOW`; afterwards no entry is `CALLED` or `SERVING`, so the next call-next succeeds.
+- **Open and close (F-10):** a single `UPDATE` of `Queue.isOpen`; entries are untouched. Setting the current value again is a no-op.
+- **Summary (F-13):** read-only; counts `EntryEvent` rows of one queue whose `at` lies in the Bangkok day, and averages (called time minus `QueueEntry.createdAt`) over the `CALLED` events of that day.
 - **Start and complete (F-06):** `UPDATE "QueueEntry" SET status = <next>, <time column> = now() WHERE id = $1 AND status = <expected>`. Zero rows updated means the transition is not allowed (or a concurrent request already did it), so the API returns `409 INVALID_TRANSITION`.
 
 ### 3.5 Migrations and seed
@@ -137,8 +158,9 @@ In Sprint 1 only the first four arrows exist. Any other transition returns `409 
 |---|---|---|---|
 | `/login` | anyone | Email and password form; after login, redirect by role | F-08a |
 | `/queues` | customer | Queues with name, service, open/closed, waiting count, Join button | F-08a |
-| `/my-ticket` | customer | Active entries with number, status, people ahead; refreshes every 10 s | F-08a |
-| `/operator` | operator | Assigned queue selector, current called/serving entry, waiting list, Call next, Start, Complete; refreshes every 10 s | F-08b |
+| `/my-ticket` | customer | Active entries with number, status, people ahead, **Cancel ticket** on a waiting entry; refreshes every 10 s | F-08a, F-09 |
+| `/operator` | operator | Overview of every assigned queue (open/closed, waiting count, current entry, Open/Close and Select buttons), then the serve panel of the selected queue: current entry, waiting list, Call next, Start, Complete, **No-show**; the selected queue is kept in `?queue=<id>`; refreshes every 10 s | F-08b, F-09, F-10 |
+| `/display/:queueId` | anyone (no login) | Queue name, open/closed, now serving number and status, waiting count, last update time; refreshes every 10 s; "Queue not found." and an error banner that keeps the last numbers | F-11 |
 | header | logged-in users | User name, role, Log out | F-08a |
 
 On load the client calls `GET /api/auth/me`. Without a session it goes to `/login`. A user on the other role's screen sees a "not available for your role" message. This is navigation only; the API still enforces every rule. Status updates use polling (NFR-08); WebSockets are out of scope.
@@ -169,6 +191,9 @@ On load the client calls `GET /api/auth/me`. Without a session it goes to `/logi
 | 403 | `FORBIDDEN_ROLE`, `FORBIDDEN_QUEUE` | Wrong role; operator on a queue not assigned to them (unknown queue also 403 for operator routes) |
 | 404 | `NOT_FOUND` | Missing resource, or a customer asks for another customer's entry (existence is not revealed) |
 | 409 | `DUPLICATE_ACTIVE_ENTRY`, `QUEUE_CLOSED`, `QUEUE_BUSY`, `NO_WAITING_ENTRY`, `INVALID_TRANSITION` | Business-rule rejection; nothing is changed |
+| planned | `COUNTER_BUSY` (replaces `QUEUE_BUSY`), `COUNTER_REQUIRED` (400), `TOO_MANY_ATTEMPTS` (429) | F-12 and hardening, not yet built |
+
+Sprint 2 and F-13 added no new error code: cancel and no-show use `NOT_FOUND`, `FORBIDDEN_*` and `INVALID_TRANSITION`; the open/close body and the summary date use `VALIDATION_ERROR`.
 | 500 | `INTERNAL_ERROR` | Unexpected error; details only in the server log |
 
 ### 5.1 Endpoint overview (details in each feature contract)
@@ -186,7 +211,12 @@ On load the client calls `GET /api/auth/me`. Without a session it goes to `/logi
 | `GET /api/operator/queues` | operator (returns assigned queues only) | F-06 |
 | `POST /api/queues/:id/call-next` | operator assigned to the queue | F-06 |
 | `POST /api/entries/:id/start`, `POST /api/entries/:id/complete` | operator assigned to the entry's queue | F-06 |
-| `GET /api/queues/:id/display` | public | F-07 |
+| `GET /api/queues/:id/display` | public | F-07 (used by the F-11 page) |
+| `POST /api/me/entries/:id/cancel` | customer (own entry only, others 404) | F-09 |
+| `POST /api/entries/:id/no-show` | operator assigned to the entry's queue | F-09 |
+| `PATCH /api/queues/:id` | operator assigned to the queue; body `{ isOpen }` | F-10 |
+| `GET /api/queues/:id/summary?date=YYYY-MM-DD` | operator assigned to the queue | F-13 |
+| `POST /api/entries/:id/priority`; `call-next` with `counterId` | operator assigned (planned) | F-12 |
 
 ## 6. Roles and permissions
 
@@ -200,6 +230,10 @@ On load the client calls `GET /api/auth/me`. Without a session it goes to `/logi
 | List assigned queues | 401 | 403 | yes (own assignments) | yes (own assignments) |
 | View a queue's active entries | 401 | 403 | yes | 403 |
 | Call next, start, complete | 401 | 403 | yes | 403 |
+| Cancel an entry | 401 | own waiting entry only (others 404) | 403 | 403 |
+| Mark no-show | 401 | 403 | yes (entry's queue) | 403 |
+| Open or close a queue | 401 | 403 | yes | 403 |
+| Read a service summary | 401 | 403 | yes | 403 |
 
 The per-route matrix in the F-03 contract is the test source; each cell is covered by an api test.
 
@@ -221,6 +255,8 @@ The per-route matrix in the F-03 contract is the test source; each cell is cover
 | `CLIENT_ORIGIN` | Browser origin allowed by CORS with credentials when the client runs on another origin | `http://localhost:5173` |
 | `SESSION_TTL_HOURS` | Session lifetime | `8` |
 | `NODE_ENV` | `production` enables the `Secure` cookie and hides error details | `development` |
+| `VITE_REFRESH_MS` | Client refresh interval in tests (default 10 000 ms, NFR-08) | `1500` in the e2e suite |
+| `LOGIN_MAX_ATTEMPTS`, `LOGIN_WINDOW_MINUTES` | Login rate limit (*planned*, hardening H-03; defaults 10 and 15) | - |
 | `TEST_DATABASE_URL` | PostgreSQL connection used by the test suite (separate `queue_test` database) | see `.env.example` |
 | `SEED_PASSWORD` | Dev-only demo password the seed hashes for every seeded account | see `.env.example` |
 
@@ -229,26 +265,37 @@ The per-route matrix in the F-03 contract is the test source; each cell is cover
 - Every variable the server reads from `process.env` is listed in `.env.example` (TEST-F01-07).
 - `.env.example` holds placeholders only; `.env` files are git-ignored (NFR-07). Production secrets are never in Git or client code.
 
-## 9. Planned deployment (built in Lab 5)
+## 9. Deployment (built in Lab 5, *delivered*)
 
-| Component | Plan |
+| Component | Implementation |
 |---|---|
-| Container | One Docker image: build the client, compile the server; Express serves `/api` and the static client. |
-| Runtime | Google Cloud Run service running the image. |
-| Database | Cloud SQL for PostgreSQL; data survives container restarts and redeployments (NFR-06). |
-| Secrets | `DATABASE_URL` in Secret Manager, injected as an environment variable. |
-| Images | Artifact Registry. |
-| Migrations | `prisma migrate deploy` runs as a release step before the new revision takes traffic. |
-| Pipeline | GitHub Actions: build and tests on every PR as a required check; deploy from `main` after a reviewed merge. |
+| Container | One Docker image: the client is built and the server compiled; Express serves `/api` and the static client from one origin. Image tag is the full commit SHA. |
+| Runtime | Cloud Run service `qms` (port 3000, 512 MiB, 1 CPU, 0 to 3 instances). |
+| Database | Cloud SQL for PostgreSQL 16 (`qms-pg`); data survives restarts and new revisions (NFR-06). |
+| Secrets | `DATABASE_URL` and the seed password in Secret Manager, injected as environment variables; never in Git. |
+| Images | Artifact Registry repository `qms`. |
+| Migrations | Cloud Run job `qms-migrate` runs `prisma migrate deploy` and the rerunnable seed before each service update. |
+| Pipeline | GitHub Actions `CI & Docker Build` on pull requests (server tests on PostgreSQL 16, client build, Docker build). `Deploy demo` runs on every merge to `main`: build and push, migrate, update the service, then a smoke test of `/api/health` and `/`. |
+| Revisions so far | `qms-00007-zqx` (Lab 6 baseline `253b80e`), `qms-00008-mg9` (`v0.2.0-sprint2`, `e82aaab`), `qms-00009-h99` (`v0.2.0-rc1`, `354f72d`). |
 
-Docker and CI are not built for Deliverable 1. The design keeps the app container-ready: configuration comes only from environment variables, and no state is kept on the local filesystem.
+Because the migration job runs the seed on each deploy, the seed must stay rerunnable and must not reset data that users created. The planned F-12 migration is additive for the same reason. Details, setup and the environment-variable table are in `docs/labs/lab-05/deployment.md`.
+
+### 9.1 Planned Sprint 3 design (*planned*, contracts only)
+
+| Item | Design | Contract |
+|---|---|---|
+| Counters (FR-18) | `Counter` table, `counterId` on entries, BR-05 per counter by a partial unique index, call-next takes `counterId`; display shows each busy counter | F-12 (`sprint-3/f-12-counters-priority.md`) |
+| Priority (FR-19, BR-14) | Operator-marked `PRIORITY`, priority first, at most 3 priority calls in a row; one pure `pickNext(waiting, recentCalls)` | F-12 |
+| Security headers, CORS | One middleware for headers; no CORS in production unless `CLIENT_ORIGIN` is set | hardening H-01, H-02 |
+| Login rate limit | Per email and client IP, in memory (per instance, so up to 3 instances on Cloud Run); `trust proxy` 1 so the key uses the real client IP | hardening H-03 |
+| Session cleanup, coverage gate, performance check | Hourly purge started in `index.ts` only; 80% line gate in CI; `perf-check.ts` with p95 under 500 ms | hardening H-04..H-06 |
 
 ## 10. Open points for review
 
 | ID | Question | Proposal |
 |---|---|---|
-| SDS-Q1 | Should BR-05 (one called or serving entry per queue) also be enforced by the database? | Optional second partial unique index on `("queueId")` where status in (`CALLED`, `SERVING`). Not required for Sprint 1 because the row lock already serializes call-next; revisit in F-12. |
-| SDS-Q2 | Validation helper for the route boundary | Small hand-written checks in `middleware/validation.ts` for Sprint 1 (few fields). Adopt a library only if both students agree, then record it as a decision. |
+| SDS-Q1 | Should BR-05 (one called or serving entry per queue) also be enforced by the database? | Decided in the F-12 contract: a partial unique index per counter (planned). Until it is built, the row lock is the only enforcement (gap G-02). |
+| SDS-Q2 | Validation helper for the route boundary | Resolved: small hand-written checks in the routes (few fields). No library was added. |
 
 ## 11. Revision history
 
@@ -256,3 +303,4 @@ Docker and CI are not built for Deliverable 1. The design keeps the app containe
 |---|---|---|---|
 | 0.1 | 2026-11-05 | MacOverlorD | First draft, aligned with SRS v0.1 and the F-01, F-03, F-05, F-07, F-08a contracts |
 | 0.2 | 2026-11-05 | MacOverlorD | Tau's review on #16: seed wording after BR-05 fix, per-file `resetAndSeed()`, `TEST_DATABASE_URL` and `SEED_PASSWORD`, lowercase email lookup |
+| 0.3 | 2026-11-25 | TauForge | Deliverable 2: Sprint 2 and F-13 as built (rules, concurrency of cancel, endpoints, permission matrix, screens), planned F-12 data model and hardening marked *planned*, deployment section updated from Lab 5, SDS-Q1 and SDS-Q2 resolved |

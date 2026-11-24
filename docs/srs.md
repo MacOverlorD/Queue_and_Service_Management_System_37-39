@@ -4,9 +4,9 @@
 |---|---|
 | Course | CPE 334, Group Project, Theme 9 |
 | Team | Rattathamnoon Buranapattana (67070501037, TauForge), Lappawat Laohasoot (67070501039, MacOverlorD) |
-| Version | 0.1 (Sprint 1 baseline) |
-| Date | 5 Nov 2026 |
-| Status | Draft for team review (Issue #1) |
+| Version | 0.3 (Deliverable 2 baseline; Sprint 1 baseline was 0.1) |
+| Date | 25 Nov 2026 |
+| Status | Current for release candidate `v0.2.0-rc1`. Sprint 1 and Sprint 2 requirements are delivered; Sprint 3 requirements are partly delivered (FR-20) or planned (section 11). |
 
 ## 1. Stakeholder problem and context
 
@@ -94,7 +94,7 @@ Sprint column shows where the requirement is first delivered and verified. Detai
 | BR-11 | `completed`, `cancelled` and `no_show` are final. A final entry cannot change status. After a final status, the customer may join the same queue again. | 1 |
 | BR-12 | Only the owner can cancel, and only while the entry is `waiting`. | 2 |
 | BR-13 | No-show can be marked only on a `called` entry, only by an operator assigned to its queue. | 2 |
-| BR-14 | The priority policy (to be defined with the TA) decides order among waiting entries; within the same priority, BR-03 order applies. | 3 |
+| BR-14 | Only an operator assigned to the queue may mark a waiting entry as priority (customers cannot). Call next takes waiting priority entries before normal ones; within the same class, BR-03 order applies. After 3 consecutive priority calls in a queue, the next call takes the head normal entry if one is waiting. (Team decision 25 Nov 2026, Q-04; contract F-12.) | 3 |
 
 ## 6. Non-functional requirements
 
@@ -133,7 +133,7 @@ Recorded in `CLAUDE.md` section 3 and repeated here as the requirement baseline.
 | D-05 | One active entry per customer per queue. | BR-01 |
 | D-06 | Status flow `waiting -> called -> serving -> completed`; cancel and no-show in Sprint 2. | BR-04 |
 | D-07 | Call next takes the head of the line only. | BR-03 |
-| D-08 | One called or serving entry per queue (single counter) until Sprint 3. | BR-05 |
+| D-08 | One called or serving entry per queue (single counter) until Sprint 3. Retired by F-12 (planned): one per counter. | BR-05 |
 | D-09 | Ticket numbers per queue, atomic, never reused. | BR-02 |
 | D-10 | bcrypt hashes, DB-stored session, httpOnly cookie, 8 h expiry, logout deletes session. | FR-01..03, NFR-02, NFR-05 |
 | D-11 | Public display shows queue name, current number, waiting count only. | FR-12, BR-08 |
@@ -141,18 +141,48 @@ Recorded in `CLAUDE.md` section 3 and repeated here as the requirement baseline.
 | D-13 | Partial unique index for active entries, raw SQL in the migration, proven by a DB test. Every later migration must be checked for an accidental `DROP INDEX` (Mac's review on PR #14). | BR-01, NFR-04 |
 | D-14 | At most one open PR per student; merge in planned order. | Process |
 
+### 8.1 Decisions added in Sprint 2 and Sprint 3
+
+Made while writing the Sprint 2 and Sprint 3 contracts; each is stated in the contract named in the last column.
+
+| ID | Decision | Affects | Contract |
+|---|---|---|---|
+| D-15 | Cancel is owner-only and only while `waiting`. Another customer's entry, a missing id and a malformed id all return 404, so existence is not revealed. Wrong status is 409 `INVALID_TRANSITION`. | FR-13, BR-07, BR-12 | F-09 |
+| D-16 | No-show frees the counter (BR-05) so Call next works again. Cancel and call-next on the same entry are serialized by a queue-row lock, so exactly one wins. | FR-14, BR-05, BR-13 | F-09 |
+| D-17 | Closing a queue only blocks new joins; entries inside stay and can be served, cancelled or marked no-show. The console keeps the selected queue in the URL (`?queue=<id>`). | FR-15, FR-16, BR-10, Lab 6 #55 | F-10 |
+| D-18 | The public display screen is a page `/display/:queueId` that polls the F-07 API every 10 s. It shows only the F-07 fields. | FR-17, BR-08 | F-11 |
+| D-19 | A service summary day is a calendar day in Asia/Bangkok (UTC+07:00), end exclusive. Average waiting time is the mean of (called time minus join time) over entries called that day, in whole seconds. | FR-20 | F-13 |
+| D-20 | Priority policy (Q-04, decided by the team, the TA was not asked): operator-marked priority, priority first, at most 3 priority calls in a row. | FR-19, BR-14 | F-12 (planned) |
+| D-21 | Counters (planned): BR-05 is enforced per counter by a partial unique index; `QUEUE_BUSY` is replaced by `COUNTER_BUSY`; the second seeded counter is on Student Affairs. | FR-18, BR-05 | F-12 (planned) |
+
 ## 9. Open questions
 
 | ID | Question | Proposed answer | Status |
 |---|---|---|---|
-| Q-01 | Is the Student Service Center context acceptable for Theme 9? | Yes, it is a service counter with a waiting line. | Ask TA |
+| Q-01 | Is the Student Service Center context acceptable for Theme 9? | Yes, it is a service counter with a waiting line. | Accepted by the team; used in Deliverable 1 and Lab 6 without objection. The TA was never asked a direct question. |
 | Q-02 | Counter field name: `nextNumber` (number to hand out next) or `lastNumber` (last number handed out)? Prisma `increment` returns the value after the update (Mac's review on PR #14). | Use `lastNumber`; the returned value is the new ticket number. | Closed: `lastNumber` confirmed in the F-04 contract |
-| Q-03 | Should the public display need login? | No, it is public but returns no private data (BR-08). | Proposed |
-| Q-04 | Priority policy for Sprint 3 (for example accessibility needs)? | Define with TA before Sprint 3. | Open |
-| Q-05 | Should ticket numbers reset daily? | Not in Sprint 1 (A-05); revisit with FR-20 summaries. | Open |
+| Q-03 | Should the public display need login? | No, it is public but returns no private data (BR-08). | Resolved: implemented in F-07 and F-11, tested (TEST-F07-02, TEST-F11-03) |
+| Q-04 | Priority policy for Sprint 3 (for example accessibility needs)? | Operator-marked priority, priority first, at most 3 priority calls in a row (BR-14). Decided by both team members on 25 Nov 2026 (the TA was not asked): the Theme 9 brief (`group_work_specs_v1.pdf`, Theme 9, "Later sprints") lists "priority policy if applicable"; operator marking prevents customers from self-declaring priority. See F-12 contract section 9. | Resolved 25 Nov 2026 (team decision) |
+| Q-05 | Should ticket numbers reset daily? | No. Numbers never reset (BR-02). Summaries group by the day of the status-change events, not by ticket number (D-19). | Resolved 25 Nov 2026 |
 
 ## 10. Revision history
 
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 5 Nov 2026 | First baseline for Deliverable 1 | TauForge |
+| 0.2 | 25 Nov 2026 | BR-14 priority policy defined and Q-04 resolved by team decision (was "to be defined with the TA"); see F-12 contract section 3 | MacOverlorD |
+| 0.3 | 25 Nov 2026 | Deliverable 2 baseline: status of every requirement (section 11), decisions D-15..D-21, Q-01, Q-03 and Q-05 settled, D-08 marked for retirement. Requirement text unchanged except BR-14 (0.2). | TauForge |
+
+## 11. Requirement status at Deliverable 2 (release candidate `v0.2.0-rc1`)
+
+"Delivered" means implemented on `main` at the tag and verified by executed tests (results in `docs/traceability.md`). "Planned" means a contract exists but no code or test has run.
+
+| Status | Requirements |
+|---|---|
+| Delivered in Sprint 1 | FR-01..FR-12 (FR-12 as the API), BR-01..BR-11 (BR-05 per queue), NFR-01..NFR-07 |
+| Delivered in Sprint 2 | FR-12 (screen), FR-13..FR-17, BR-04 (Sprint 2 transitions), BR-12, BR-13 |
+| Delivered in Lab 5 | NFR-09, NFR-06 (redeployment part) |
+| Delivered early from Sprint 3 | FR-20 (service summaries API; the summary screen is planned) |
+| Planned (Sprint 3, contract written) | FR-18, FR-19, BR-05 (per counter), BR-14, NFR-10, NFR-11, and the hardening items in `docs/sprints/sprint-3/hardening.md` |
+| Partial (its own status, not repeated above) | NFR-08: the end-to-end checks pass; the manual loading-state check is not yet recorded |
+
