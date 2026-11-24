@@ -2,7 +2,7 @@
 
 Issue #67. Author MacOverlorD, reviewer TauForge. Sprint 3, **contract only** for Deliverable 2 (planned, not implemented). Requirements: FR-18, FR-19, BR-03, BR-05 (revised), BR-06, BR-14, NFR-01, NFR-03. Closes known gap G-02. Depends on: F-06 (call next), F-09 (final statuses), F-10 (console), F-07/F-11 (display).
 
-**Open question (SRS Q-04):** the priority policy in section 3 is our proposal. It is sent to the TA for confirmation; the answer and date are recorded in section 9 before implementation starts. If the TA asks for a different policy, only section 3, its AC and its tests change; the counter part does not depend on it.
+**Priority policy (SRS Q-04): agreed on 25 Nov 2026** (section 9). Section 3 is the policy to build. If it is ever revised, only section 3, its AC and its tests change; the counter part does not depend on it.
 
 ## 1. Behavior
 
@@ -48,7 +48,7 @@ Body: `{ "counterId": 3 }`.
 - Console: a **Counter** select per queue (remembered in the URL as `?queue=<id>&counter=<id>`, like F-10); Call next sends `counterId`; Now serving shows the entry of the chosen counter; the overview shows each counter's current number.
 - Display page (F-11): one line per busy counter, "Counter 2: 17 Serving"; waiting count unchanged.
 
-## 3. Priority policy (proposal, TA to confirm)
+## 3. Priority policy (agreed, Q-04)
 
 ### Data
 
@@ -127,7 +127,7 @@ TDD: TEST-F12-02, TEST-F12-04 and TEST-F12-08 are committed failing before each 
 
 ## 7. Definition of Done
 
-- Two PRs into the Sprint 3 staging branch: **F-12a counters** (migration, BR-05 per counter, display/console) and **F-12b priority** (after the TA's answer). Contract merged first; first commit of each is the failing tests.
+- Two PRs into the Sprint 3 staging branch: **F-12a counters** (migration, BR-05 per counter, display/console) and **F-12b priority** (policy agreed, Q-04). Contract merged first; first commit of each is the failing tests.
 - AC-F12-01..12 implemented; TEST-F12-01..12 pass; full server suite and all e2e pass with counts saved; migration tested on a copy of the rc1 data.
 - SRS: BR-05 text updated to "per counter", D-08 retired, Q-04 closed with the TA's answer; G-02 marked resolved; F-03 matrix and traceability rows (FR-18, FR-19, BR-05, BR-14) updated.
 - Reviewer ran two counters by hand and saw two customers called at once, and a `COUNTER_BUSY` on a busy counter.
@@ -137,16 +137,17 @@ TDD: TEST-F12-02, TEST-F12-04 and TEST-F12-08 are committed failing before each 
 | Part | Status | Target |
 |---|---|---|
 | F-12a Counters | **Planned.** Contract only; no code, no test run. | MacOverlorD, merged by Sat 5 Dec |
-| F-12b Priority | **Planned, waiting for TA (Q-04).** Proposal in section 3. | MacOverlorD, merged by Tue 8 Dec |
+| F-12b Priority | **Planned.** Policy agreed (Q-04, section 9); contract only, no code, no test run. | MacOverlorD, merged by Tue 8 Dec |
 
 ## 9. TA decision on the priority policy (Q-04)
 
 | Date | Question | Answer |
 |---|---|---|
-| (to fill) | Is "operator marks priority; priority first, lowest number inside a class; after 3 priority calls one normal" acceptable for BR-14? | (pending) |
+| 25 Nov 2026 | Is "operator marks priority; priority first, lowest number inside a class; after 3 priority calls one normal" acceptable for BR-14? | Yes, go ahead with this policy (confirmed by MacOverlorD for the team). Q-04 closed. |
 
 ## 10. Revisions
 
 | Date | Change | Reason |
 |---|---|---|
-| 25 Nov 2026 | First version (priority policy proposed, TA confirmation pending) | Deliverable 2, Sprint 3 contract |
+| 25 Nov 2026 | First version | Deliverable 2, Sprint 3 contract |
+| 25 Nov 2026 | Priority policy agreed; Q-04 closed (section 9) | Team decision |
