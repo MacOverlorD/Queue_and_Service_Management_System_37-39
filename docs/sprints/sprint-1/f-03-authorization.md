@@ -29,9 +29,10 @@ Error body always `{ "error": { "code", "message" } }`. No entity data in any 40
 | GET /api/operator/queues | 401 | 403 | own assigned queues | own assigned queues |
 | POST /api/queues/:id/entries | 401 | yes | 403 | 403 |
 | GET /api/me/entries, GET /api/me/entries/:id | 401 | own only | 403 | 403 |
+| POST /api/me/entries/:id/cancel (F-09, Sprint 2) | 401 | own only (others 404) | 403 | 403 |
 | GET /api/queues/:id/entries | 401 | 403 | yes | 403 |
 | POST /api/queues/:id/call-next | 401 | 403 | yes | 403 |
-| POST /api/entries/:id/start, /complete | 401 | 403 | yes (entry's queue) | 403 |
+| POST /api/entries/:id/start, /complete, /no-show (no-show: F-09, Sprint 2) | 401 | 403 | yes (entry's queue) | 403 |
 | GET /api/queues/:id/display | yes | yes | yes | yes |
 
 ## 4. Acceptance criteria
@@ -63,3 +64,4 @@ All AC implemented; TEST-F03-01..05 executed and passing with failing-first outp
 | Date | Change | Reason |
 |---|---|---|
 | 5 Nov 2026 | First version | Deliverable 1 |
+| 24 Nov 2026 | Route matrix gains the F-09 routes (cancel, no-show) | Sprint 2, F-09 (#63) |
