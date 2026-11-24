@@ -23,6 +23,7 @@ export const routeAccess: ReadonlyArray<{ method: Method; path: string; guard: G
   { method: "post", path: "/api/me/entries/:id/cancel", guard: "customer" },
   { method: "get", path: "/api/operator/queues", guard: "operator" },
   { method: "get", path: "/api/queues/:id/entries", guard: "operatorOnQueueParam" },
+  { method: "get", path: "/api/queues/:id/summary", guard: "operatorOnQueueParam" },
   { method: "post", path: "/api/queues/:id/call-next", guard: "operatorOnQueueParam" },
   { method: "patch", path: "/api/queues/:id", guard: "operatorOnQueueParam" },
   { method: "post", path: "/api/entries/:id/start", guard: "operatorOnEntryParam" },

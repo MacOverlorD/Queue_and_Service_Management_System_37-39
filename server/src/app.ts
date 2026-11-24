@@ -9,6 +9,7 @@ import { entriesRouter } from "./routes/entries";
 import { queuesRouter } from "./routes/queues";
 import { displayRouter } from "./routes/display";
 import { serveRouter } from "./routes/serve";
+import { summaryRouter } from "./routes/summary";
 import { sendError } from "./http/errors";
 
 // Production: one container serves the API and the built client. cwd is server/ in dev, tests and the image.
@@ -32,6 +33,7 @@ export function createApp(prisma: PrismaClient, clientDist: string = DEFAULT_CLI
   // Authorization guards for every protected route (F-03). Feature routers mount after this.
   applyRouteAccess(app, prisma);
   app.use("/api/queues", queuesRouter(prisma));
+  app.use("/api/queues", summaryRouter(prisma));
   // Public routes (no guard): the display exposes only non-private fields (F-07).
   app.use("/api/queues", displayRouter(prisma));
   app.use("/api", entriesRouter(prisma));
