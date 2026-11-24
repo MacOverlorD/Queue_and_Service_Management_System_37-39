@@ -87,9 +87,9 @@ Seed: queues A Registrar Desk and B Finance Desk (operator1), C Student Affairs 
 | TEST-F10-04 | AC-F10-04 | api | B open | customer1 PATCH B; operator2 PATCH B; operator2 PATCH 999999 and `abc`; no session PATCH B | 403 `FORBIDDEN_ROLE`; 403 `FORBIDDEN_QUEUE` ×3; 401; B still open |
 | TEST-F10-05 | AC-F10-05 | api | B open | operator1 PATCH B with `{}`, `{isOpen:"false"}`, `{isOpen:null}`, `{isOpen:false, name:"X"}` | Each 400 `VALIDATION_ERROR`; B still open, name unchanged |
 | TEST-F10-06 | AC-F10-06 | api | B open | operator1 PATCH B `{isOpen:true}` | 200 `isOpen:true`; row unchanged |
-| TEST-F10-07 | AC-F10-07 | component | Mocked `operatorQueues` returns A and B with counts and current | Render console | Two overview rows with name, badge, waiting count, current number; no other queue |
+| TEST-F10-07 | AC-F10-07 | e2e | Reseeded; operator1 logged in | Open `/operator` | Overview has exactly two rows, Finance Desk (Open, 0 waiting, no one served) and Registrar Desk (Open, 2 waiting, current #4 Serving); no row or text for Student Affairs |
 | TEST-F10-08 | AC-F10-08 | e2e | operator1 logged in; customer3 in another context | Close B from the console; customer3 opens queue list; reopen B | Badge "Closed"; customer sees B as Closed; after reopen badge "Open" and customer can join |
-| TEST-F10-09 | AC-F10-09 | e2e | operator1 logged in | Select B, press F5; open `/operator?queue=3` (C, not assigned) and `/operator?queue=abc` | After F5 B still selected and URL has `queue=<B id>`; the two bad URLs show the first queue (Finance Desk) and no request for queue 3 entries |
+| TEST-F10-09 | AC-F10-09 | e2e | operator1 logged in; C's id looked up by name ("Student Affairs") through the API, never hardcoded | Select Registrar Desk, press F5; open `/operator?queue=<C id>` (not assigned) and `/operator?queue=abc` | After F5 Registrar Desk still selected and URL has `queue=<its id>`; both bad URLs show the first queue (Finance Desk), the URL is corrected, and no request is made for C's entries |
 
 TDD: TEST-F10-01, TEST-F10-04 and TEST-F10-09 are committed failing before the implementation; failing and passing output with commit IDs goes in the PR.
 
@@ -105,3 +105,4 @@ TDD: TEST-F10-01, TEST-F10-04 and TEST-F10-09 are committed failing before the i
 | Date | Change | Reason |
 |---|---|---|
 | 24 Nov 2026 | First version; includes the #55 fix (queue in URL) | Sprint 2, Deliverable 2 |
+| 24 Nov 2026 | TEST-F10-07 is e2e against the seed (no client unit runner, no stubs); TEST-F10-09 looks up C's id by name and uses Registrar Desk for the reload check | Review of #70 by TauForge |

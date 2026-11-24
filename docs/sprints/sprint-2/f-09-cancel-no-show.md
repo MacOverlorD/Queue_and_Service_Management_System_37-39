@@ -102,17 +102,19 @@ Seed (F-01): queue A Registrar Desk and B Finance Desk assigned to operator1; qu
 |---|---|---|---|---|---|
 | TEST-F09-01 | AC-F09-02, AC-F09-06 | unit | All statuses × actions `cancel`, `noShow` | `nextStatus(status, action)` | Only `WAITING`+`cancel` → `CANCELLED` and `CALLED`+`noShow` → `NO_SHOW`; all other pairs null; F-06 pairs unchanged |
 | TEST-F09-02 | AC-F09-01 | api | customer3 and customer4 `WAITING` in B (numbers n, n+1) | customer3 POST cancel on own entry | 200 `CANCELLED`; B `waitingCount` −1; customer4 `peopleAhead` −1; entry absent from `GET /api/queues/B/entries` |
-| TEST-F09-03 | AC-F09-02 | api | customer3 owns entries in `CALLED`, `SERVING`, `COMPLETED` | POST cancel on each | Each 409 `INVALID_TRANSITION`; statuses unchanged; no new event |
+| TEST-F09-03 | AC-F09-02 | api | Created directly with Prisma (like the F-06 tests), because D-08/D-13 forbid two active entries of one customer in one queue and C is closed: customer3 `CALLED` #1 and `COMPLETED` #2 in B, `SERVING` #99 in A | POST cancel on each | Each 409 `INVALID_TRANSITION`; statuses unchanged; no new event |
 | TEST-F09-04 | AC-F09-03 | api | customer4 has a `WAITING` entry | customer3 POST cancel on it; on id 999999; on id `abc` | Each 404 `NOT_FOUND`; customer4 entry still `WAITING` |
 | TEST-F09-05 | AC-F09-04 | api | customer3 `WAITING` in B | operator1 POST cancel; no session POST cancel | 403 `FORBIDDEN_ROLE`; 401 `UNAUTHENTICATED`; entry unchanged |
 | TEST-F09-06 | AC-F09-05 | api | B: one entry `CALLED`, one `WAITING` | operator1 POST no-show on the called entry, then POST call-next on B | No-show 200 `NO_SHOW`; call-next 200 and the waiting entry is `CALLED` |
 | TEST-F09-07 | AC-F09-06 | api | Entries in B `WAITING`, `SERVING`, `COMPLETED` | operator1 POST no-show on each | Each 409 `INVALID_TRANSITION`; unchanged |
-| TEST-F09-08 | AC-F09-07 | api | `CALLED` entry in queue A | customer1 POST no-show; operator2 POST no-show; operator2 on id 999999 | 403 `FORBIDDEN_ROLE`; 403 `FORBIDDEN_QUEUE`; 403 `FORBIDDEN_QUEUE`; entry still `CALLED` |
+| TEST-F09-08 | AC-F09-07 | api | customer3 `CALLED` #98 in queue A, created directly with Prisma (permissions only) | customer1 POST no-show; operator2 POST no-show; operator2 on id 999999 | 403 `FORBIDDEN_ROLE`; 403 `FORBIDDEN_QUEUE`; 403 `FORBIDDEN_QUEUE`; entry still `CALLED` |
 | TEST-F09-09 | AC-F09-08 | api | Fresh entries in B | Cancel one (customer3); call-next + no-show another (operator1); then one rejected cancel | Events: `WAITING`→`CANCELLED` actor customer3; `CALLED`→`NO_SHOW` actor operator1; rejected request adds no row |
 | TEST-F09-10 | AC-F09-09 | api | customer3 entry in B cancelled; customer4 entry in B no-show | customer3 and customer4 POST join B | Both 201 `WAITING` with numbers higher than their old ones |
-| TEST-F09-11 | AC-F09-10 | integration | customer3 is head of line in free queue B | Send cancel (customer3) and call-next (operator1) at the same time, 10 rounds | Each round: exactly one 200 and one 409; the entry is either `CANCELLED` or `CALLED`; one event for the winner only |
+| TEST-F09-11 | AC-F09-10 | integration | Each round resets itself: any `WAITING`/`CALLED` entry left in B is set to `COMPLETED`, then a fresh `WAITING` entry for customer3 (number = round) is created directly with Prisma, so it is head of line in a free queue | Send cancel (customer3) and call-next (operator1) at the same time; 10 rounds | Each round: exactly one 200 and one 409; the entry is either `CANCELLED` or `CALLED`; one event for the winner only |
 | TEST-F09-12 | AC-F09-11 | e2e | Seed; customer3 logged in | Join B, press **Cancel ticket** | Ticket shows `CANCELLED`; joining B again from the queue list succeeds with a new number |
-| TEST-F09-13 | AC-F09-11 | e2e | Customer joined B; operator1 console on B | Call next, press **No-show**, press **Call next** | Current entry clears after no-show; next call succeeds or shows "Nobody is waiting in this queue." |
+| TEST-F09-13 | AC-F09-11 | e2e | Reseeded; customer3 then customer4 join B through the API (#1, #2); operator1 console on B | Call next (#1 Customer Three), press **No-show**, press **Call next** | After no-show "No one is being served"; the second Call next calls #2 Customer Four (status Called), not refused as busy |
+
+How AC-F09-08's "same transaction" is checked: rejected requests write no event row (TEST-F09-09), the race writes exactly one event for the winner (TEST-F09-11), and the reviewer confirms in code that the status update and the event insert are inside one `prisma.$transaction`.
 
 TDD: TEST-F09-01, TEST-F09-02 and TEST-F09-06 are committed failing before the implementation; their failing and passing output (with commit IDs) goes in the PR.
 
@@ -129,3 +131,4 @@ TDD: TEST-F09-01, TEST-F09-02 and TEST-F09-06 are committed failing before the i
 | Date | Change | Reason |
 |---|---|---|
 | 24 Nov 2026 | First version | Sprint 2, Deliverable 2 |
+| 24 Nov 2026 | TEST-F09-13 has one expected result (two customers, second call takes #2); setup of TEST-F09-03, -08 and -11 stated; how AC-F09-08 is checked | Review of #70 by TauForge |
