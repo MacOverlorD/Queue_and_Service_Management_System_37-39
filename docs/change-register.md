@@ -52,10 +52,12 @@ The full text, the triage and our retest comments are in the Lab 6 report (Appen
 | Sprint 1 release | `v0.1.0-sprint1` (`628485c`) | before Lab 5 | Deliverable 1: the original journey |
 | Lab 6 baseline | `main` `253b80e` | `qms-00007-zqx` | UAT fix #58 |
 | Sprint 2 release | `v0.2.0-sprint2` (`e82aaab`, release PR #76) | `qms-00008-mg9` | F-09, F-10, F-11; kept identifiable even though the candidate contains more |
-| Release candidate | `v0.2.0-rc1` (`354f72d`, release PR #78) | `qms-00009-h99` | Adds F-13 (service summaries API); the candidate submitted for Deliverable 2 |
+| Release candidate | `v0.2.0-rc1` (`354f72d`, release PR #78) | `qms-00009-h99` | Adds F-13 (service summaries API). The Deliverable 2 submission tag will be `v0.2.0`, a docs-only change over `rc1` with the regression rerun on it; this row is updated when that tag exists. |
 
 | Date | Change | Rationale | Where |
 |---|---|---|---|
+| 12 Nov 2026 | The repository moved to the MacOverlorD account | GitHub billing lock on the first account blocked Actions (gap G-06) | Lab 5 |
+| 12 Nov 2026 | The login page shows the system name (Lab 5 visible change) | Lab 5 requires one visible change through staging into `main`, deployed and checked | PR #45, Lab 5 |
 | 24 Nov 2026 | F-09, F-10, F-11 built in one sprint; F-13 implemented early | Finish Sprint 2 and show a real Sprint 3 workflow before 29 Nov | CLAUDE.md section 4a, PR #70 |
 | 24 Nov 2026 | Deliverable 2 documents owned by TauForge (was MacOverlorD) | Balance the workload | PR #70 |
 | 24 Nov 2026 | F-11 and F-10 console checks are end-to-end tests, not mocked component tests | No stubs rule; the client has no unit-test runner | Reviews of PR #70 and #71 |

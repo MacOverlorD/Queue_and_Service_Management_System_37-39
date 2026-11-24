@@ -68,15 +68,15 @@ The Prisma error text printed during the server run is the expected 500 of the t
 
 | Req | Feature | Sprint | AC | Test IDs | Actual test file(s) | Result | Version |
 |---|---|---|---|---|---|---|---|
-| NFR-01 unauthenticated 401, no private data | F-03 | 1 | AC-F03-01 | TEST-F03-01 | api/authorization.test.ts | Pass | v0.2.0-rc1 (`354f72d`) |
+| NFR-01 unauthenticated 401, no private data | F-03 | 1 | AC-F03-01 | TEST-F03-01, TEST-L6-58 | api/authorization.test.ts, api/apiNotFound.test.ts | Pass | v0.2.0-rc1 (`354f72d`) |
 | NFR-02 bcrypt hashes, never returned | F-01, F-02 | 1 | AC-F01-06, AC-F02-01 | TEST-F01-06, TEST-F02-01 | db/constraints.test.ts, api/auth.test.ts | Pass | v0.2.0-rc1 (`354f72d`) |
 | NFR-03 50 concurrent joins, distinct numbers | F-04 | 1 | AC-F04-06 | TEST-F04-06 | api/join-queue.test.ts | Pass | v0.2.0-rc1 (`354f72d`) |
 | NFR-04 DB rejects duplicate active entry | F-01 | 1 | AC-F01-03 | TEST-F01-03 | db/constraints.test.ts | Pass | v0.2.0-rc1 (`354f72d`) |
 | NFR-05 8 h expiry, logout invalidates | F-02 | 1 | AC-F02-05, AC-F02-06 | TEST-F02-05, TEST-F02-06 | api/auth.test.ts, unit/session.test.ts | Pass | v0.2.0-rc1 (`354f72d`) |
 | NFR-06 data survives restart / redeploy | F-01, R-DEP | 1, 2 | AC-F01-05 | TEST-F01-05 | integration/seed-and-health.test.ts | Pass: restart test (TEST-F01-05); redeploy shown by the same seed state on revisions qms-00007-zqx, qms-00008-mg9 and qms-00009-h99 (measurement) | v0.2.0-rc1 (`354f72d`) |
-| NFR-07 no secrets, env documented | F-01, R-SEC | 1 | AC-F01-07 | TEST-F01-07 | integration/env-config.test.ts | Pass: TEST-F01-07 and the secret scan before release (clean) | v0.2.0-rc1 (`354f72d`) |
+| NFR-07 no secrets, env documented | F-01, R-SEC | 1 | AC-F01-07 | TEST-F01-07, TEST-L5-01 | integration/env-config.test.ts, integration/seed-production.test.ts | Pass: TEST-F01-07, TEST-L5-01; secret scan repeated on v0.2.0-rc1 (`354f72d`), clean (saved as RC1/secret-scan.txt; the Deliverable 1 scan was at `f9a7800`) | v0.2.0-rc1 (`354f72d`) |
 | NFR-08 loading/empty/error states, 10 s refresh | F-08a, F-08b | 1 | AC-F08a-04, AC-F08a-05, AC-F08b-03 | TEST-F08a-04 | e2e/customer.spec.ts | Partial: E2E pass (TEST-F08a-04, TEST-F11-02, TEST-F11-06); the manual loading-state check (TEST-F08b-03b, gap G-05) is not recorded | v0.2.0-rc1 (`354f72d`) |
-| NFR-09 Docker and GCP | R-DEP (Lab 5) | 2 (Lab 5) | Lab 5 | none (pipeline evidence) | CI run `45408387203` (release PR #76), Deploy demo runs `45408860350` (`e82aaab`) and `45411518362` (`354f72d`) | Pass (measurement: image built, migrated, deployed, `/api/health` 200) | v0.2.0-rc1 (`354f72d`) |
+| NFR-09 Docker and GCP | R-DEP (Lab 5) | 2 (Lab 5) | Lab 5 | TEST-L5-01, TEST-L5-02 (integration, API); pipeline evidence | integration/seed-production.test.ts, api/static.test.ts; CI run `45408387203` (release PR #76), Deploy demo runs `45408860350` (`e82aaab`) and `45411518362` (`354f72d`) | Pass (measurement: image built, migrated, deployed, `/api/health` 200) | v0.2.0-rc1 (`354f72d`) |
 | NFR-10 p95 under 500 ms with 200 entries | F-13, hardening H-06 | 3 | AC-H06-01, AC-H06-02 | TEST-H06-01, TEST-H06-02 | none yet | Planned: not measured | - |
 | NFR-11 80% coverage of server domain modules | R-QA, hardening H-05 | 3 | AC-H05-01 | TEST-H05-01 | none yet | Planned: coverage not measured | - |
 

@@ -159,7 +159,7 @@ Made while writing the Sprint 2 and Sprint 3 contracts; each is stated in the co
 
 | ID | Question | Proposed answer | Status |
 |---|---|---|---|
-| Q-01 | Is the Student Service Center context acceptable for Theme 9? | Yes, it is a service counter with a waiting line. | Ask TA |
+| Q-01 | Is the Student Service Center context acceptable for Theme 9? | Yes, it is a service counter with a waiting line. | Accepted by the team; used in Deliverable 1 and Lab 6 without objection. The TA was never asked a direct question. |
 | Q-02 | Counter field name: `nextNumber` (number to hand out next) or `lastNumber` (last number handed out)? Prisma `increment` returns the value after the update (Mac's review on PR #14). | Use `lastNumber`; the returned value is the new ticket number. | Closed: `lastNumber` confirmed in the F-04 contract |
 | Q-03 | Should the public display need login? | No, it is public but returns no private data (BR-08). | Resolved: implemented in F-07 and F-11, tested (TEST-F07-02, TEST-F11-03) |
 | Q-04 | Priority policy for Sprint 3 (for example accessibility needs)? | Operator-marked priority, priority first, at most 3 priority calls in a row (BR-14). Decided by both team members on 25 Nov 2026 (the TA was not asked): the Theme 9 brief (`group_work_specs_v1.pdf`, Theme 9, "Later sprints") lists "priority policy if applicable"; operator marking prevents customers from self-declaring priority. See F-12 contract section 9. | Resolved 25 Nov 2026 (team decision) |
@@ -171,7 +171,7 @@ Made while writing the Sprint 2 and Sprint 3 contracts; each is stated in the co
 |---|---|---|---|
 | 0.1 | 5 Nov 2026 | First baseline for Deliverable 1 | TauForge |
 | 0.2 | 25 Nov 2026 | BR-14 priority policy defined and Q-04 resolved by team decision (was "to be defined with the TA"); see F-12 contract section 3 | MacOverlorD |
-| 0.3 | 25 Nov 2026 | Deliverable 2 baseline: status of every requirement (section 11), decisions D-15..D-21, Q-03 and Q-05 resolved, D-08 marked for retirement. Requirement text unchanged except BR-14 (0.2). | TauForge |
+| 0.3 | 25 Nov 2026 | Deliverable 2 baseline: status of every requirement (section 11), decisions D-15..D-21, Q-01, Q-03 and Q-05 settled, D-08 marked for retirement. Requirement text unchanged except BR-14 (0.2). | TauForge |
 
 ## 11. Requirement status at Deliverable 2 (release candidate `v0.2.0-rc1`)
 
@@ -179,10 +179,10 @@ Made while writing the Sprint 2 and Sprint 3 contracts; each is stated in the co
 
 | Status | Requirements |
 |---|---|
-| Delivered in Sprint 1 | FR-01..FR-12 (FR-12 as the API), BR-01..BR-11, NFR-01..NFR-08 |
+| Delivered in Sprint 1 | FR-01..FR-12 (FR-12 as the API), BR-01..BR-11 (BR-05 per queue), NFR-01..NFR-07 |
 | Delivered in Sprint 2 | FR-12 (screen), FR-13..FR-17, BR-04 (Sprint 2 transitions), BR-12, BR-13 |
 | Delivered in Lab 5 | NFR-09, NFR-06 (redeployment part) |
 | Delivered early from Sprint 3 | FR-20 (service summaries API; the summary screen is planned) |
 | Planned (Sprint 3, contract written) | FR-18, FR-19, BR-05 (per counter), BR-14, NFR-10, NFR-11, and the hardening items in `docs/sprints/sprint-3/hardening.md` |
-| Partial | NFR-08 (the manual loading-state check is not yet recorded) |
+| Partial (its own status, not repeated above) | NFR-08: the end-to-end checks pass; the manual loading-state check is not yet recorded |
 
