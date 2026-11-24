@@ -24,6 +24,15 @@ export type OperatorQueue = {
 export type QueueRow = { id: number; number: number; status: EntryStatus; customerName: string; createdAt: string };
 
 // Every API error has the shared shape { error: { code, message } } (Sprint 1 conventions).
+export type QueueDisplay = {
+  queueId: number;
+  queueName: string;
+  isOpen: boolean;
+  currentNumber: number | null;
+  currentStatus: "CALLED" | "SERVING" | null;
+  waitingCount: number;
+};
+
 export class ApiRequestError extends Error {
   constructor(
     public status: number,
@@ -64,6 +73,7 @@ export const api = {
   listQueues: () => request<{ queues: QueueSummary[] }>("/api/queues").then((r) => r.queues),
   joinQueue: (queueId: number) =>
     request<{ entry: Ticket }>(`/api/queues/${queueId}/entries`, { method: "POST" }).then((r) => r.entry),
+  queueDisplay: (queueId: string) => request<QueueDisplay>(`/api/queues/${encodeURIComponent(queueId)}/display`),
   operatorQueues: () => request<{ queues: OperatorQueue[] }>("/api/operator/queues").then((r) => r.queues),
   queueEntries: (queueId: number) =>
     request<{ entries: QueueRow[] }>(`/api/queues/${queueId}/entries`).then((r) => r.entries),
