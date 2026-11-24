@@ -9,7 +9,7 @@ import {
 } from "../middleware/requireQueueOperator";
 
 type Guard = "customer" | "operator" | "operatorOnQueueParam" | "operatorOnEntryParam";
-type Method = "get" | "post";
+type Method = "get" | "post" | "patch";
 
 // Route permission matrix of the F-03 contract (section 3). The guards run first; later
 // features mount the real handlers after applyRouteAccess(), so a route can never be
@@ -20,11 +20,14 @@ export const routeAccess: ReadonlyArray<{ method: Method; path: string; guard: G
   { method: "post", path: "/api/queues/:id/entries", guard: "customer" },
   { method: "get", path: "/api/me/entries", guard: "customer" },
   { method: "get", path: "/api/me/entries/:id", guard: "customer" },
+  { method: "post", path: "/api/me/entries/:id/cancel", guard: "customer" },
   { method: "get", path: "/api/operator/queues", guard: "operator" },
   { method: "get", path: "/api/queues/:id/entries", guard: "operatorOnQueueParam" },
   { method: "post", path: "/api/queues/:id/call-next", guard: "operatorOnQueueParam" },
+  { method: "patch", path: "/api/queues/:id", guard: "operatorOnQueueParam" },
   { method: "post", path: "/api/entries/:id/start", guard: "operatorOnEntryParam" },
   { method: "post", path: "/api/entries/:id/complete", guard: "operatorOnEntryParam" },
+  { method: "post", path: "/api/entries/:id/no-show", guard: "operatorOnEntryParam" },
 ];
 
 function guardChain(prisma: PrismaClient, guard: Guard): RequestHandler[] {

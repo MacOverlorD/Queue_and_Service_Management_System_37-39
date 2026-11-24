@@ -24,6 +24,15 @@ export type OperatorQueue = {
 export type QueueRow = { id: number; number: number; status: EntryStatus; customerName: string; createdAt: string };
 
 // Every API error has the shared shape { error: { code, message } } (Sprint 1 conventions).
+export type QueueDisplay = {
+  queueId: number;
+  queueName: string;
+  isOpen: boolean;
+  currentNumber: number | null;
+  currentStatus: "CALLED" | "SERVING" | null;
+  waitingCount: number;
+};
+
 export class ApiRequestError extends Error {
   constructor(
     public status: number,
@@ -64,11 +73,16 @@ export const api = {
   listQueues: () => request<{ queues: QueueSummary[] }>("/api/queues").then((r) => r.queues),
   joinQueue: (queueId: number) =>
     request<{ entry: Ticket }>(`/api/queues/${queueId}/entries`, { method: "POST" }).then((r) => r.entry),
+  queueDisplay: (queueId: string) => request<QueueDisplay>(`/api/queues/${encodeURIComponent(queueId)}/display`),
   operatorQueues: () => request<{ queues: OperatorQueue[] }>("/api/operator/queues").then((r) => r.queues),
   queueEntries: (queueId: number) =>
     request<{ entries: QueueRow[] }>(`/api/queues/${queueId}/entries`).then((r) => r.entries),
   callNext: (queueId: number) => request<unknown>(`/api/queues/${queueId}/call-next`, { method: "POST" }),
   startEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/start`, { method: "POST" }),
   completeEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/complete`, { method: "POST" }),
+  setQueueOpen: (queueId: number, isOpen: boolean) =>
+    request<unknown>(`/api/queues/${queueId}`, { method: "PATCH", body: JSON.stringify({ isOpen }) }),
+  noShowEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/no-show`, { method: "POST" }),
+  cancelTicket: (entryId: number) => request<unknown>(`/api/me/entries/${entryId}/cancel`, { method: "POST" }),
   myActiveTickets: () => request<{ entries: Ticket[] }>("/api/me/entries?status=active").then((r) => r.entries),
 };

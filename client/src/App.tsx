@@ -8,6 +8,7 @@ import Login, { homeFor } from "./pages/Login";
 import Queues from "./pages/Queues";
 import MyTicket from "./pages/MyTicket";
 import OperatorConsole from "./pages/OperatorConsole";
+import Display from "./pages/Display";
 
 // Navigation only: the API still enforces every role and ownership rule.
 function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/queues" element={<RequireRole role="CUSTOMER"><Queues /></RequireRole>} />
           <Route path="/my-ticket" element={<RequireRole role="CUSTOMER"><MyTicket /></RequireRole>} />
           <Route path="/operator" element={<RequireRole role="OPERATOR"><OperatorConsole /></RequireRole>} />
+          <Route path="/display/:queueId" element={<Display />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </AuthProvider>

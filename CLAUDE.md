@@ -7,9 +7,11 @@ Read this file first. It tells you what the project is, who owns what, the order
 - Course: CPE 334, Group Work, Theme 9 "Queue and Service Management System".
 - Team: **TauForge** (Rattathamnoon Buranapattana, 67070501037) and **MacOverlorD** (Lappawat Laohasoot, 67070501039).
 - Repo: https://github.com/MacOverlorD/Queue_and_Service_Management_System_37-39
-- Current deadline: **Project Deliverable 1, Sun 8 Nov 2026, 23:59.** One self-contained PDF (Parts A-F) on LEB2, plus a release tag on `main`. Target submitting by 20:00.
-- Lab 5 (Docker, CI/CD, GCP) is in progress, due 15 Nov. Plan: `LAB5_PLAN_V2.md` (kept outside the repo); Issues carry the label `lab5`.
-- Source specs (not in repo): `group_work_specs_v1.pdf` and `project_deliverable_1_v1.pdf`. Full plan: `docs/superpowers/plans/2026-11-05-deliverable-1-plan.md`.
+- Team name: **Max_Verstappen** (group TH-027_P9, section 1).
+- **Current deadline: Project Deliverable 2, Sun 29 Nov 2026, 23:59** (Sprint 2 complete + Sprint 3 progress, 70 points). Spec (not in repo): `project_deliverable_2_v1.pdf`. Final release: Sun 13 Dec.
+- **Now building Sprint 2 and part of Sprint 3** (both humans agreed, 24 Nov). Work split and timeline: see section 4a. Integration branch: `sprint2-staging`.
+- Done: Deliverable 1 (tag `v0.1.0-sprint1`), Lab 5 (CI/CD on GCP, Cloud Run service `qms`), Lab 6 UAT (accepted; #58 fixed, #55 and #57 accepted minor limitations, #56 enhancement).
+- Older specs (not in repo): `group_work_specs_v1.pdf`, `project_deliverable_1_v1.pdf`.
 
 ## 2. What we build in Sprint 1
 
@@ -52,7 +54,23 @@ Each feature has a GitHub Issue, a contract (feature SDS, AC, STS, DoD), tests a
 | F-08a | UI: login, customer join and status | TauForge | MacOverlorD |
 | F-08b | UI: operator console | MacOverlorD | TauForge |
 
-Later sprints (do not build now): F-09 cancel and no-show, F-10 operator dashboard and multi-queue, F-11 public display screen, F-12 multiple counters and priority, F-13 summaries and reports.
+## 4a. Sprint 2 and Sprint 3 (current work, Deliverable 2)
+
+Build these now. Each follows section 7 with `sprint2-staging` in place of `sprint1-staging`. Contracts go in `docs/sprints/sprint-2/` (Sprint 3: `docs/sprints/sprint-3/`) and merge before the code.
+
+| Issue | Feature | Author | Reviewer | Scope for 29 Nov |
+|---|---|---|---|---|
+| #63 | F-09 Cancel and no-show (FR-13, FR-14, BR-11..BR-13) | MacOverlorD | TauForge | Complete |
+| #64 | F-10 Queue control and multi-queue console (FR-15, FR-16, BR-10; fixes #55) | MacOverlorD | TauForge | Complete |
+| #65 | F-11 Public display screen (FR-17, BR-08) | TauForge | MacOverlorD | Complete |
+| #66 | F-13 Service summaries (FR-20), Sprint 3 | TauForge | MacOverlorD | API + tests (the implemented Sprint 3 workflow) |
+| #67 | F-12 Counters and priority (FR-18, FR-19, BR-05 revised, BR-14), Sprint 3 | MacOverlorD | TauForge | Contract only; priority policy to agree with the TA |
+| #68 | Sprint 3 hardening (NFR-10, NFR-11, G-03, G-04, #56, #57) | TauForge | MacOverlorD | Contract only |
+| #69 | Deliverable 2 docs: SRS, features, system SDS, traceability, change register | TauForge | MacOverlorD | Complete |
+
+Order: contracts (#63-#66) merged first; then F-09 and F-11 in parallel; then F-10 and F-13. Release `sprint2-staging` -> `main` after F-09, F-10, F-11 and tag `v0.2.0-sprint2`; then merge F-13 and tag the candidate `v0.2.0-rc1`. Every merge to `main` deploys (Deploy demo workflow). D-14 still applies: one open PR per student.
+
+Sprint 2 changes to earlier decisions: D-06 gains `waiting -> cancelled` (customer, own entry) and `called -> no_show` (assigned operator), as in BR-12 and BR-13. D-08 stays until F-12.
 
 Docs: TauForge writes `docs/srs.md`, `docs/features.md`, `docs/traceability.md`. MacOverlorD writes `docs/system-sds.md` and `docs/sprints/plan.md`. Each writes the contracts for their own features under `docs/sprints/sprint-1/`. Each reviews the other's.
 
