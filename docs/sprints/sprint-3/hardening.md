@@ -41,21 +41,22 @@ Implementation may use a small hand-written middleware or the `helmet` package; 
 
 ### H-03 Login rate limit (G-03)
 
-- Key: normalized email plus client IP. A successful login clears the counter for that key.
+- Key: normalized email plus client IP (`req.ip`). A successful login clears the counter for that key.
+- Client IP behind Cloud Run: Express ignores `X-Forwarded-For` unless told to trust the proxy, and `req.ip` would then be the Google front end for every user, which turns the key into "email only". So `app.set("trust proxy", 1)` is set in production (one proxy hop, the Cloud Run front end) and the app created for tests sets it too, so the IP rule is tested the way it runs.
 - After **10** failed attempts for a key within **15 minutes**, further `POST /api/auth/login` for that key return **429 `TOO_MANY_ATTEMPTS`** with a `Retry-After` header (seconds), without checking the password. Other keys are unaffected.
-- The 429 body is the shared error shape and gives no hint whether the email exists. A valid user cannot be locked out by another client's IP.
+- The 429 body is the shared error shape and gives no hint whether the email exists. Failures from one client IP never block the same email from another client IP.
 - Store: in memory (one process). Cloud Run may run several instances, so the limit is per instance; this is stated as a known limitation, not hidden.
 - Settings come from `LOGIN_MAX_ATTEMPTS` (default 10) and `LOGIN_WINDOW_MINUTES` (default 15), listed in `.env.example`, so tests and demos can use small values.
 
 ### H-04 Session cleanup (G-04)
 
 - `purgeExpiredSessions(prisma, now)` deletes every `Session` row with `expiresAt <= now` and returns the number deleted.
-- It runs once at server start and then every hour (`setInterval`, cleared on shutdown and unref'd so it never keeps the process or tests alive).
+- It runs once at server start and then every hour (`setInterval`, cleared on shutdown and unref'd). The timer is started in `server/src/index.ts` only, never in `createApp`, so Vitest and Supertest never run it in the background.
 - Live sessions are never touched, and a request with an expired cookie still gets 401 (NFR-05 unchanged).
 
 ### H-05 Coverage gate (NFR-11)
 
-- `npm --prefix server run test:coverage` runs Vitest with the v8 coverage provider over `src/services`, `src/middleware`, `src/auth` and `src/http` with thresholds `lines: 80`.
+- `npm --prefix server run test:coverage` runs Vitest with the v8 coverage provider over `src/services`, `src/middleware`, `src/auth` and `src/http` with one threshold of `lines: 80` on the **total** of those folders (the per-file figures are printed for information and are not individually enforced).
 - CI (`CI & Docker Build`) runs it in place of the plain test step and fails the job below the threshold. The coverage summary is kept as a CI log or artifact.
 - Rule: raise coverage by adding real tests; no `/* c8 ignore */`, no excluding files to reach the number.
 
@@ -84,6 +85,7 @@ Data: no schema change (H-04 only deletes rows). UI: no change, except that the 
 | AC-H02-02 | With `CLIENT_ORIGIN` set, only that origin is echoed; another origin gets none. Outside production the default origin is still `http://localhost:5173`. |
 | AC-H03-01 | After the configured number of failed logins for one email and IP, the next login (even with the right password) gets 429 `TOO_MANY_ATTEMPTS` with `Retry-After`. |
 | AC-H03-02 | A different email from the same IP, and the same email below the limit, are not blocked; a successful login resets the counter. |
+| AC-H03-04 | The key uses the real client IP behind the proxy (`trust proxy` = 1): failures from client IP A do not block the same email from client IP B. |
 | AC-H03-03 | The 429 reply is identical for a known and an unknown email. |
 | AC-H04-01 | `purgeExpiredSessions` deletes expired sessions, keeps live ones and returns the deleted count. |
 | AC-H04-02 | A request with a purged or expired cookie gets 401 `UNAUTHENTICATED`. |
@@ -103,10 +105,11 @@ Data: no schema change (H-04 only deletes rows). UI: no change, except that the 
 | TEST-H02-02 | AC-H02-02 | api | `CLIENT_ORIGIN=https://app.example.test`; then development | Requests with matching and non-matching origin | Matching origin echoed with credentials; other gets none; dev default is `http://localhost:5173` |
 | TEST-H03-01 | AC-H03-01 | api | `LOGIN_MAX_ATTEMPTS=3` | 3 wrong logins, then the correct password | 4th attempt 429 `TOO_MANY_ATTEMPTS`, `Retry-After` present |
 | TEST-H03-02 | AC-H03-02 | api | Same setup | 2 wrong logins then a correct one; another email after 3 failures on the first | Correct login 200 and counter reset; other email not blocked |
+| TEST-H03-04 | AC-H03-04 | api | `LOGIN_MAX_ATTEMPTS=3`; app with `trust proxy` 1 | 3 wrong logins for one email with `X-Forwarded-For: 203.0.113.1`, then the correct password with `X-Forwarded-For: 203.0.113.2` | 200 for client B; a 4th attempt from client A is 429 |
 | TEST-H03-03 | AC-H03-03 | api | Limit reached for a known and an unknown email | Compare both 429 replies | Same status, code and body shape |
 | TEST-H04-01 | AC-H04-01 | integration | 2 expired and 1 live session rows | `purgeExpiredSessions` | Returns 2; only the live row remains |
 | TEST-H04-02 | AC-H04-02 | api | Session expired and then purged | Request with that cookie | 401 `UNAUTHENTICATED` |
-| TEST-H05-01 | AC-H05-01 | ci | Current suite | `npm --prefix server run test:coverage` | Prints per-file and total lines at least 80%; the CI run fails when a threshold is raised above the measured value (checked once, then reverted) |
+| TEST-H05-01 | AC-H05-01 | ci | Current suite | `npm --prefix server run test:coverage` | Prints per-file lines and the total; the total is at least 80%; the CI run fails when a threshold is raised above the measured value (checked once, then reverted) |
 | TEST-H06-01 | AC-H06-01 | perf | Local database with 200 active entries | `perf-check.ts` against the local server | p95 under 500 ms for all four operations; exit 0 |
 | TEST-H06-02 | AC-H06-02 | perf | Deployed URL and synthetic accounts | `perf-check.ts` against the service | Output saved with the revision name; exit 0 or the failure is disclosed |
 | TEST-H06-03 | AC-H06-03 | e2e | No `VITE_REFRESH_MS`; fake clock | Open `/my-ticket`, advance the clock 10 s | A second `GET /api/me/entries` was sent |
@@ -130,3 +133,4 @@ Data: no schema change (H-04 only deletes rows). UI: no change, except that the 
 | Date | Change | Reason |
 |---|---|---|
 | 24 Nov 2026 | First version | Deliverable 2, Sprint 3 contract |
+| 24 Nov 2026 | H-03 keys on the real client IP (`trust proxy` 1, AC-H03-04, TEST-H03-04); H-04 timer only in `index.ts`; H-05 threshold is on the total | Review of #74 by MacOverlorD |
