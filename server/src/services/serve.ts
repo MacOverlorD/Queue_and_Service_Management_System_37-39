@@ -36,6 +36,12 @@ async function operatorView(prisma: PrismaClient, entry: QueueEntry) {
   };
 }
 
+// F-10: open or close a queue for new joins (BR-10). Entries are untouched; writing the same value is a no-op.
+export async function setQueueOpen(prisma: PrismaClient, queueId: number, isOpen: boolean) {
+  const queue = await prisma.queue.update({ where: { id: queueId }, data: { isOpen }, select: { id: true, name: true, isOpen: true } });
+  return queue;
+}
+
 // Queue-row lock serializes call-next on one queue, so BR-05 (one CALLED/SERVING) holds under concurrency.
 export async function callNext(prisma: PrismaClient, queueId: number, operatorId: number) {
   const entry = await prisma.$transaction(
