@@ -1,15 +1,18 @@
 import { EntryStatus, PrismaClient, QueueEntry } from "@prisma/client";
 import { ApiError } from "./queues";
 
-export type ServeAction = "start" | "complete";
+export type ServeAction = "start" | "complete" | "noShow";
+export type EntryAction = ServeAction | "cancel";
 
-// The only Sprint 1 operator transitions after "call next" (BR-04, BR-11).
-const TRANSITIONS: Record<ServeAction, { from: EntryStatus; to: EntryStatus }> = {
-  start: { from: "CALLED", to: "SERVING" },
-  complete: { from: "SERVING", to: "COMPLETED" },
+// Every allowed transition after "call next" (BR-04, BR-11; F-09 adds cancel and no-show, BR-12, BR-13).
+const TRANSITIONS: Record<EntryAction, { from: EntryStatus; to: EntryStatus; refused: string }> = {
+  start: { from: "CALLED", to: "SERVING", refused: "This ticket cannot be moved to SERVING." },
+  complete: { from: "SERVING", to: "COMPLETED", refused: "This ticket cannot be moved to COMPLETED." },
+  noShow: { from: "CALLED", to: "NO_SHOW", refused: "Only a called ticket can be marked as no-show." },
+  cancel: { from: "WAITING", to: "CANCELLED", refused: "Only a waiting ticket can be cancelled." },
 };
 
-export function nextStatus(current: EntryStatus, action: ServeAction): EntryStatus | null {
+export function nextStatus(current: EntryStatus, action: EntryAction): EntryStatus | null {
   return TRANSITIONS[action].from === current ? TRANSITIONS[action].to : null;
 }
 
@@ -56,14 +59,15 @@ export async function callNext(prisma: PrismaClient, queueId: number, operatorId
 
 // Conditional update: zero rows means the entry is not in the expected status (or a concurrent request won).
 export async function transition(prisma: PrismaClient, entryId: number, action: ServeAction, operatorId: number) {
-  const { from, to } = TRANSITIONS[action];
+  const { from, to, refused } = TRANSITIONS[action];
   const now = new Date();
+  const times = action === "start" ? { servingAt: now } : action === "complete" ? { completedAt: now } : {};
   const entry = await prisma.$transaction(async (tx) => {
     const { count } = await tx.queueEntry.updateMany({
       where: { id: entryId, status: from },
-      data: { status: to, handledByOperatorId: operatorId, ...(action === "start" ? { servingAt: now } : { completedAt: now }) },
+      data: { status: to, handledByOperatorId: operatorId, ...times },
     });
-    if (count === 0) throw new ApiError(409, "INVALID_TRANSITION", `This ticket cannot be moved to ${to}.`);
+    if (count === 0) throw new ApiError(409, "INVALID_TRANSITION", refused);
     await tx.entryEvent.create({ data: { entryId, fromStatus: from, toStatus: to, actorId: operatorId } });
     return tx.queueEntry.findUniqueOrThrow({ where: { id: entryId } });
   });
@@ -86,4 +90,22 @@ export async function operatorQueues(prisma: PrismaClient, operatorId: number) {
     waitingCount: q._count.entries,
     current: q.entries[0] ? { entryId: q.entries[0].id, number: q.entries[0].number, status: q.entries[0].status } : null,
   }));
+}
+
+// F-09 cancel: owner only (others look missing, BR-07), WAITING only (BR-12). Locking the queue row first
+// serializes with call-next, so a cancel and a call of the same entry cannot both succeed.
+export async function cancelEntry(prisma: PrismaClient, entryId: number, customerId: number) {
+  const { from, to, refused } = TRANSITIONS.cancel;
+  return prisma.$transaction(
+    async (tx) => {
+      const owned = await tx.queueEntry.findFirst({ where: { id: entryId, customerId }, select: { queueId: true } });
+      if (!owned) throw new ApiError(404, "NOT_FOUND", "Ticket not found.");
+      await tx.$queryRaw`SELECT id FROM "Queue" WHERE id = ${owned.queueId} FOR UPDATE`;
+      const { count } = await tx.queueEntry.updateMany({ where: { id: entryId, customerId, status: from }, data: { status: to } });
+      if (count === 0) throw new ApiError(409, "INVALID_TRANSITION", refused);
+      await tx.entryEvent.create({ data: { entryId, fromStatus: from, toStatus: to, actorId: customerId } });
+      return tx.queueEntry.findUniqueOrThrow({ where: { id: entryId }, include: { queue: { select: { name: true } } } });
+    },
+    { maxWait: 15_000, timeout: 15_000 },
+  );
 }

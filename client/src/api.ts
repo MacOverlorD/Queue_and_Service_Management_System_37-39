@@ -70,5 +70,7 @@ export const api = {
   callNext: (queueId: number) => request<unknown>(`/api/queues/${queueId}/call-next`, { method: "POST" }),
   startEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/start`, { method: "POST" }),
   completeEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/complete`, { method: "POST" }),
+  noShowEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/no-show`, { method: "POST" }),
+  cancelTicket: (entryId: number) => request<unknown>(`/api/me/entries/${entryId}/cancel`, { method: "POST" }),
   myActiveTickets: () => request<{ entries: Ticket[] }>("/api/me/entries?status=active").then((r) => r.entries),
 };

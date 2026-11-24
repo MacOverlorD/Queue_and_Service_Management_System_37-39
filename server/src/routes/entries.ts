@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { EntryStatus, PrismaClient } from "@prisma/client";
 import { sendError } from "../http/errors";
-import { entryView } from "../services/queues";
+import { ApiError, entryView } from "../services/queues";
+import { cancelEntry } from "../services/serve";
 
 const ACTIVE_STATUSES: EntryStatus[] = ["WAITING", "CALLED", "SERVING"];
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
@@ -41,6 +42,24 @@ export function entriesRouter(prisma: PrismaClient): Router {
       }
       res.json({ entry: await entryView(prisma, row, row.queue.name) });
     } catch (err) {
+      next(err);
+    }
+  });
+
+  // F-09: customer cancels own waiting entry. Missing, malformed and other customers' ids are all 404 (BR-07).
+  router.post("/me/entries/:id/cancel", async (req, res, next) => {
+    if (!POSITIVE_INTEGER.test(req.params.id)) {
+      sendError(res, 404, "NOT_FOUND", "Ticket not found.");
+      return;
+    }
+    try {
+      const row = await cancelEntry(prisma, Number(req.params.id), req.user!.id);
+      res.json({ entry: await entryView(prisma, row, row.queue.name) });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        sendError(res, err.status, err.code, err.message);
+        return;
+      }
       next(err);
     }
   });
