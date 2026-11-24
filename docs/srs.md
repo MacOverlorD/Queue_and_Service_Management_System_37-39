@@ -94,7 +94,7 @@ Sprint column shows where the requirement is first delivered and verified. Detai
 | BR-11 | `completed`, `cancelled` and `no_show` are final. A final entry cannot change status. After a final status, the customer may join the same queue again. | 1 |
 | BR-12 | Only the owner can cancel, and only while the entry is `waiting`. | 2 |
 | BR-13 | No-show can be marked only on a `called` entry, only by an operator assigned to its queue. | 2 |
-| BR-14 | The priority policy (to be defined with the TA) decides order among waiting entries; within the same priority, BR-03 order applies. | 3 |
+| BR-14 | Only an operator assigned to the queue may mark a waiting entry as priority (customers cannot). Call next takes waiting priority entries before normal ones; within the same class, BR-03 order applies. After 3 consecutive priority calls in a queue, the next call takes the head normal entry if one is waiting. (Policy decided 25 Nov 2026, Q-04; contract F-12.) | 3 |
 
 ## 6. Non-functional requirements
 
@@ -148,7 +148,7 @@ Recorded in `CLAUDE.md` section 3 and repeated here as the requirement baseline.
 | Q-01 | Is the Student Service Center context acceptable for Theme 9? | Yes, it is a service counter with a waiting line. | Ask TA |
 | Q-02 | Counter field name: `nextNumber` (number to hand out next) or `lastNumber` (last number handed out)? Prisma `increment` returns the value after the update (Mac's review on PR #14). | Use `lastNumber`; the returned value is the new ticket number. | Closed: `lastNumber` confirmed in the F-04 contract |
 | Q-03 | Should the public display need login? | No, it is public but returns no private data (BR-08). | Proposed |
-| Q-04 | Priority policy for Sprint 3 (for example accessibility needs)? | Define with TA before Sprint 3. | Open |
+| Q-04 | Priority policy for Sprint 3 (for example accessibility needs)? | Operator-marked priority, priority first, at most 3 priority calls in a row (BR-14). Decided by the team: the Theme 9 brief lists a priority policy "if applicable" and requires no external approval; operator marking prevents customers from self-declaring priority. | Resolved 25 Nov 2026 (team decision) |
 | Q-05 | Should ticket numbers reset daily? | Not in Sprint 1 (A-05); revisit with FR-20 summaries. | Open |
 
 ## 10. Revision history
@@ -156,3 +156,4 @@ Recorded in `CLAUDE.md` section 3 and repeated here as the requirement baseline.
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 0.1 | 5 Nov 2026 | First baseline for Deliverable 1 | TauForge |
+| 0.2 | 25 Nov 2026 | BR-14 priority policy defined and Q-04 resolved by team decision (was "to be defined with the TA"); see F-12 contract section 3 | MacOverlorD |
