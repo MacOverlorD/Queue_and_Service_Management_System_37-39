@@ -129,7 +129,7 @@ TDD: TEST-F12-02, TEST-F12-04 and TEST-F12-08 are committed failing before each 
 
 - Two PRs into the Sprint 3 staging branch: **F-12a counters** (migration, BR-05 per counter, display/console) and **F-12b priority** (policy agreed, Q-04). Contract merged first; first commit of each is the failing tests.
 - AC-F12-01..12 implemented; TEST-F12-01..12 pass; full server suite and all e2e pass with counts saved; migration tested on a copy of the rc1 data.
-- SRS: BR-05 text updated to "per counter", D-08 retired, Q-04 closed with the TA's answer; G-02 marked resolved; F-03 matrix and traceability rows (FR-18, FR-19, BR-05, BR-14) updated.
+- SRS: BR-05 text updated to "per counter", D-08 retired, Q-04 closed with the agreed policy (section 9); G-02 marked resolved; F-03 matrix and traceability rows (FR-18, FR-19, BR-05, BR-14) updated.
 - Reviewer ran two counters by hand and saw two customers called at once, and a `COUNTER_BUSY` on a busy counter.
 
 ## 8. Status at Deliverable 2
@@ -139,7 +139,7 @@ TDD: TEST-F12-02, TEST-F12-04 and TEST-F12-08 are committed failing before each 
 | F-12a Counters | **Planned.** Contract only; no code, no test run. | MacOverlorD, merged by Sat 5 Dec |
 | F-12b Priority | **Planned.** Policy agreed (Q-04, section 9); contract only, no code, no test run. | MacOverlorD, merged by Tue 8 Dec |
 
-## 9. TA decision on the priority policy (Q-04)
+## 9. Decision on the priority policy (Q-04)
 
 | Date | Question | Answer |
 |---|---|---|
