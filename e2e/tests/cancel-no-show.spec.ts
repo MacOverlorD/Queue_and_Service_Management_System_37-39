@@ -6,6 +6,8 @@ const PASSWORD = "DemoPass123!";
 const API = "http://localhost:3100";
 
 test.beforeAll(() => resetDb());
+// customer.spec.ts runs next and expects the documented seed (customer4 has no entry in B), so leave it clean.
+test.afterAll(() => resetDb());
 
 async function login(page: Page, email: string) {
   await page.goto("/login");
