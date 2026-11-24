@@ -25,11 +25,11 @@ async function queueIdByName(request: APIRequestContext, name: string): Promise<
 }
 
 const overviewRow = (page: Page, name: string) =>
-  page.getByRole("list", { name: "Your queues" }).getByRole("listitem").filter({ hasText: name });
+  page.getByRole("list", { name: "Overview" }).getByRole("listitem").filter({ hasText: name });
 
 test("TEST-F10-07 / AC-F10-07: the console shows every assigned queue at once, and only those", async ({ page }) => {
   await login(page, "operator1@example.test");
-  const rows = page.getByRole("list", { name: "Your queues" }).getByRole("listitem");
+  const rows = page.getByRole("list", { name: "Overview" }).getByRole("listitem");
   await expect(rows).toHaveCount(2);
 
   const finance = overviewRow(page, "Finance Desk");
