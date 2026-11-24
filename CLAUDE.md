@@ -66,7 +66,7 @@ Build these now. Each follows section 7 with `sprint2-staging` in place of `spri
 | #66 | F-13 Service summaries (FR-20), Sprint 3 | TauForge | MacOverlorD | API + tests (the implemented Sprint 3 workflow) |
 | #67 | F-12 Counters and priority (FR-18, FR-19, BR-05 revised, BR-14), Sprint 3 | MacOverlorD | TauForge | Contract only; priority policy to agree with the TA |
 | #68 | Sprint 3 hardening (NFR-10, NFR-11, G-03, G-04, #56, #57) | TauForge | MacOverlorD | Contract only |
-| #69 | Deliverable 2 docs: SRS, features, system SDS, traceability, change register | MacOverlorD | TauForge | Complete |
+| #69 | Deliverable 2 docs: SRS, features, system SDS, traceability, change register | TauForge | MacOverlorD | Complete |
 
 Order: contracts (#63-#66) merged first; then F-09 and F-11 in parallel; then F-10 and F-13. Release `sprint2-staging` -> `main` after F-09, F-10, F-11 and tag `v0.2.0-sprint2`; then merge F-13 and tag the candidate `v0.2.0-rc1`. Every merge to `main` deploys (Deploy demo workflow). D-14 still applies: one open PR per student.
 
