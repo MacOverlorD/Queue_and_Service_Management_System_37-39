@@ -101,3 +101,6 @@ form button { margin-top: var(--space); width: 100%; }
 .display-status { font-size: 1.6rem; margin: 8px 0 0; }
 .display-waiting { font-size: 2rem; font-weight: 700; margin: 0; }
 .display-open { font-weight: 600; }
+
+/* F-10: the queue whose serve panel is shown. */
+.list-item.selected { outline: 2px solid currentColor; outline-offset: -2px; }

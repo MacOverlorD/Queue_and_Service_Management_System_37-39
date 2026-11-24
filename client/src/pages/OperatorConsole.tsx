@@ -1,27 +1,52 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api, OperatorQueue, QueueRow } from "../api";
 import { useAuth } from "../auth";
 import { EmptyState, ErrorBanner, Loading } from "../components/Feedback";
 import { StatusBadge } from "../components/StatusBadge";
 import { usePolling } from "../usePolling";
 
-// Operator console (F-08b). The UI only calls the API: the server decides who may act on which queue.
+// Operator console (F-08b, F-10). The UI only calls the API: the server decides who may act on which queue.
 export default function OperatorConsole() {
   const { handleError } = useAuth();
   const [queues, setQueues] = useState<OperatorQueue[] | null>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
+  const [toggling, setToggling] = useState<number | null>(null);
+  // F-10 / Lab 6 #55: the selected queue lives in ?queue=<id>, so a reload keeps it.
+  const [params, setParams] = useSearchParams();
+  const wanted = Number(params.get("queue"));
+  const selectedId = queues?.some((q) => q.id === wanted) ? wanted : (queues?.[0]?.id ?? null);
+  const select = useCallback((id: number) => setParams({ queue: String(id) }, { replace: true }), [setParams]);
 
-  usePolling(async () => {
+  const loadQueues = useCallback(async () => {
     try {
-      const list = await api.operatorQueues();
-      setQueues(list);
-      setSelectedId((id) => (id !== null && list.some((q) => q.id === id) ? id : (list[0]?.id ?? null)));
+      setQueues(await api.operatorQueues());
       setLoadError(null);
     } catch (err) {
       setLoadError(handleError(err));
     }
-  });
+  }, [handleError]);
+  usePolling(loadQueues);
+
+  // An unassigned, malformed or missing ?queue falls back to the first queue; correct the URL to match.
+  const inUrl = params.get("queue");
+  useEffect(() => {
+    if (selectedId !== null && inUrl !== String(selectedId)) select(selectedId);
+  }, [selectedId, inUrl, select]);
+
+  async function toggle(q: OperatorQueue) {
+    setToggleError(null);
+    setToggling(q.id);
+    try {
+      await api.setQueueOpen(q.id, !q.isOpen);
+    } catch (err) {
+      setToggleError(handleError(err));
+    } finally {
+      setToggling(null);
+    }
+    await loadQueues();
+  }
 
   return (
     <main className="card">
@@ -31,6 +56,26 @@ export default function OperatorConsole() {
       {queues?.length === 0 && <EmptyState>No queues assigned to you.</EmptyState>}
       {queues && queues.length > 0 && (
         <>
+          <ul className="list" aria-label="Overview">
+            {queues.map((q) => (
+              <li key={q.id} className={`list-item${q.id === selectedId ? " selected" : ""}`}>
+                <div>
+                  <h2>{q.name}</h2>
+                  <p className="muted">
+                    {q.isOpen ? "Open" : "Closed"} · {q.waitingCount} waiting ·{" "}
+                    {q.current ? `#${q.current.number} ${q.current.status === "CALLED" ? "Called" : "Serving"}` : "No one is being served"}
+                  </p>
+                </div>
+                <button type="button" className="btn" disabled={toggling === q.id} onClick={() => toggle(q)}>
+                  {q.isOpen ? "Close queue" : "Open queue"}
+                </button>
+                <button type="button" className="btn" disabled={q.id === selectedId} onClick={() => select(q.id)}>
+                  Select
+                </button>
+              </li>
+            ))}
+          </ul>
+          <ErrorBanner message={toggleError} />
           <label htmlFor="queue-select" className="field-label">
             Queue
           </label>
@@ -38,7 +83,7 @@ export default function OperatorConsole() {
             id="queue-select"
             className="select"
             value={selectedId ?? ""}
-            onChange={(e) => setSelectedId(Number(e.target.value))}
+            onChange={(e) => select(Number(e.target.value))}
           >
             {queues.map((q) => (
               <option key={q.id} value={q.id}>
