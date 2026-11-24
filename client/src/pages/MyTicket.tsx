@@ -11,6 +11,8 @@ export default function MyTicket() {
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Kept apart from the polling error, so a refused cancel (e.g. the ticket was just called) is not cleared by the next refresh.
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function load() {
     try {
@@ -25,11 +27,12 @@ export default function MyTicket() {
   async function cancel(t: Ticket) {
     setCancelling(t.id);
     setNotice(null);
+    setActionError(null);
     try {
       await api.cancelTicket(t.id);
       setNotice(`Ticket #${t.number} in ${t.queueName} is cancelled.`);
     } catch (err) {
-      setError(handleError(err));
+      setActionError(handleError(err));
     } finally {
       setCancelling(null);
     }
@@ -42,7 +45,7 @@ export default function MyTicket() {
   return (
     <main className="card">
       <h1>My tickets</h1>
-      <ErrorBanner message={error} />
+      <ErrorBanner message={actionError ?? error} />
       {notice && <p className="muted" role="status">{notice}</p>}
       {tickets === null && !error && <Loading />}
       {tickets?.length === 0 && <EmptyState>You are not in any queue.</EmptyState>}
