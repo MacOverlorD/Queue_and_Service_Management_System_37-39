@@ -102,9 +102,14 @@ function QueuePanel({ queueId }: { queueId: number }) {
             </div>
             <StatusBadge status={current.status} />
             {current.status === "CALLED" && (
-              <button type="button" className="btn btn-primary" disabled={busy} onClick={() => act(() => api.startEntry(current.id))}>
-                Start
-              </button>
+              <>
+                <button type="button" className="btn btn-primary" disabled={busy} onClick={() => act(() => api.startEntry(current.id))}>
+                  Start
+                </button>
+                <button type="button" className="btn" disabled={busy} onClick={() => act(() => api.noShowEntry(current.id))}>
+                  No-show
+                </button>
+              </>
             )}
             {current.status === "SERVING" && (
               <button type="button" className="btn btn-primary" disabled={busy} onClick={() => act(() => api.completeEntry(current.id))}>
