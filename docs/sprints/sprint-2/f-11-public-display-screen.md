@@ -60,6 +60,7 @@ Privacy (BR-08): the page renders only the six fields returned by F-07. It never
 | AC-F11-04 | An unknown or malformed queue id shows "Queue not found." and no numbers. |
 | AC-F11-05 | A queue with nobody called or served shows "No one is being served" and its waiting count (0 for an empty queue). |
 | AC-F11-06 | When the API cannot be reached, the page shows "Cannot load the display. Retrying.", keeps the last numbers, and recovers by itself on the next successful refresh. |
+| AC-F11-07 | (CR-01) An open queue at its waiting limit shows "Full: not taking new tickets". Checked by TEST-F04-13 (e2e). |
 
 ## 6. Software Test Specification
 
@@ -90,3 +91,4 @@ Regression: TEST-F07-01..03 and the Sprint 1 e2e journeys (`customer.spec.ts`, `
 | Date | Change | Reason |
 |---|---|---|
 | 24 Nov 2026 | First version | Deliverable 2, Sprint 2 |
+| 26 Nov 2026 | Full line from the F-07 `isFull` field; AC-F11-07 added | Lab 7 change request CR-01 (#82), contract `docs/maintenance/cr-01-queue-capacity.md` |

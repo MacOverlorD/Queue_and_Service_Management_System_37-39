@@ -54,6 +54,8 @@ model Queue {
   // Last ticket number handed out. A join increments it atomically (D-12).
   lastNumber  Int     @default(0)
   isOpen      Boolean @default(true)
+  // CR-01 (Lab 7): max WAITING entries; null = no limit. 1..200 enforced by a CHECK constraint in the migration.
+  maxWaiting  Int?
 
   operators OperatorQueue[]
   entries   QueueEntry[]

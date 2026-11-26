@@ -40,24 +40,29 @@ export default function Queues() {
       {queues === null && !error && <Loading />}
       {queues?.length === 0 && <EmptyState>No queues are available right now.</EmptyState>}
       <ul className="list">
-        {queues?.map((q) => (
-          <li key={q.id} className="list-item">
-            <div>
-              <h2>{q.name}</h2>
-              <p className="muted">
-                {q.serviceName} · {q.isOpen ? "Open" : "Closed"} · {q.waitingCount} waiting
-              </p>
-            </div>
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={!q.isOpen || joining !== null}
-              onClick={() => join(q.id)}
-            >
-              {q.isOpen ? (joining === q.id ? "Joining..." : "Join") : "Closed"}
-            </button>
-          </li>
-        ))}
+        {queues?.map((q) => {
+          // CR-01: the server decides (409 QUEUE_FULL); this only reflects the last refresh. Closed wins over Full.
+          const full = q.isOpen && q.maxWaiting !== null && q.waitingCount >= q.maxWaiting;
+          return (
+            <li key={q.id} className="list-item">
+              <div>
+                <h2>{q.name}</h2>
+                <p className="muted">
+                  {q.serviceName} · {q.isOpen ? (full ? "Full" : "Open") : "Closed"} · {q.waitingCount}
+                  {q.maxWaiting !== null && ` / ${q.maxWaiting}`} waiting
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={!q.isOpen || full || joining !== null}
+                onClick={() => join(q.id)}
+              >
+                {!q.isOpen ? "Closed" : full ? "Full" : joining === q.id ? "Joining..." : "Join"}
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </main>
   );

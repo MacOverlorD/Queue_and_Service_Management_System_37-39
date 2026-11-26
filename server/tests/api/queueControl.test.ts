@@ -41,7 +41,8 @@ describe("TEST-F10-01 / AC-F10-01: an assigned operator closes a queue", () => {
     const b = await queueByName(prisma, "Finance Desk");
     const res = await patch(b.id, { isOpen: false }, op1);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ queue: { id: b.id, name: "Finance Desk", isOpen: false } });
+    // Revised for CR-01 (Lab 7): the PATCH response also carries maxWaiting.
+    expect(res.body).toEqual({ queue: { id: b.id, name: "Finance Desk", isOpen: false, maxWaiting: null } });
 
     const join = await post(`/api/queues/${b.id}/entries`, c3);
     expect(join.status).toBe(409);

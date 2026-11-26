@@ -4,8 +4,8 @@
 |---|---|
 | Course | CPE 334, Group Project, Theme 9 |
 | Team | Rattathamnoon Buranapattana (67070501037, TauForge), Lappawat Laohasoot (67070501039, MacOverlorD) |
-| Version | 0.3 (Deliverable 2 baseline; Sprint 1 baseline was 0.1) |
-| Date | 25 Nov 2026 |
+| Version | 0.4 (Lab 7 change CR-01 over the Deliverable 2 baseline 0.3; Sprint 1 baseline was 0.1) |
+| Date | 26 Nov 2026 |
 | Status | Current for release candidate `v0.2.0-rc1`. Sprint 1 and Sprint 2 requirements are delivered; Sprint 3 requirements are partly delivered (FR-20) or planned (section 11). |
 
 ## 1. Stakeholder problem and context
@@ -59,18 +59,18 @@ Sprint column shows where the requirement is first delivered and verified. Detai
 | FR-01 | The system shall let a seeded user log in with email and password and start a session. | All users | 1 |
 | FR-02 | The system shall let a logged-in user log out, ending the session so it can no longer be used. | All users | 1 |
 | FR-03 | The system shall return the current user's id, name and role for a valid session. | All users | 1 |
-| FR-04 | The system shall list service queues with name, service, open/closed state and waiting count. | Customer | 1 |
-| FR-05 | The system shall let a customer join an open queue and receive a ticket number and `waiting` status. | Customer | 1 |
+| FR-04 | The system shall list service queues with name, service, open/closed state, waiting count and waiting limit. | Customer | 1 (limit: CR-01) |
+| FR-05 | The system shall let a customer join an open queue that is not full (BR-15) and receive a ticket number and `waiting` status. | Customer | 1 (not full: CR-01) |
 | FR-06 | The system shall show a customer their own entries with ticket number, status, and number of people ahead while waiting. | Customer | 1 |
 | FR-07 | The system shall show an operator the active entries (waiting, called, serving) of each queue assigned to them, in queue order. | Operator | 1 |
 | FR-08 | The system shall let an operator call the next waiting entry of an assigned queue, changing it to `called`. | Operator | 1 |
 | FR-09 | The system shall let an operator start service on a called entry, changing it to `serving`. | Operator | 1 |
 | FR-10 | The system shall let an operator complete a serving entry, changing it to `completed`. | Operator | 1 |
 | FR-11 | The system shall record every status change of an entry with old status, new status, acting user and time. | System | 1 |
-| FR-12 | The system shall provide a public display for a queue showing queue name, the ticket number currently called or serving, and the waiting count. | Public viewer | 1 (API), 2 (screen) |
+| FR-12 | The system shall provide a public display for a queue showing queue name, the ticket number currently called or serving, the waiting count, and whether the queue is full. | Public viewer | 1 (API), 2 (screen), full flag: CR-01 |
 | FR-13 | The system shall let a customer cancel their own entry while it is waiting. | Customer | 2 |
 | FR-14 | The system shall let an operator mark a called entry as no-show. | Operator | 2 |
-| FR-15 | The system shall let an operator open and close an assigned queue for new joins. | Operator | 2 |
+| FR-15 | The system shall let an operator open and close an assigned queue for new joins, and set or remove its waiting limit. | Operator | 2 (limit: CR-01) |
 | FR-16 | The system shall show an operator one console covering all their assigned queues. | Operator | 2 |
 | FR-17 | The system shall provide a public display screen that refreshes automatically. | Public viewer | 2 |
 | FR-18 | The system shall support several counters serving the same queue at the same time. | Operator | 3 |
@@ -95,6 +95,7 @@ Sprint column shows where the requirement is first delivered and verified. Detai
 | BR-12 | Only the owner can cancel, and only while the entry is `waiting`. | 2 |
 | BR-13 | No-show can be marked only on a `called` entry, only by an operator assigned to its queue. | 2 |
 | BR-14 | Only an operator assigned to the queue may mark a waiting entry as priority (customers cannot). Call next takes waiting priority entries before normal ones; within the same class, BR-03 order applies. After 3 consecutive priority calls in a queue, the next call takes the head normal entry if one is waiting. (Team decision 25 Nov 2026, Q-04; contract F-12.) | 3 |
+| BR-15 | A queue may have a waiting limit from 1 to 200, or none. When the number of `waiting` entries equals the limit, a join is rejected (`QUEUE_FULL`) and uses no ticket number. Only `waiting` entries count; a place opens when one is called or cancelled. A closed queue gives `QUEUE_CLOSED` first, and a duplicate active entry gives `DUPLICATE_ACTIVE_ENTRY` before `QUEUE_FULL`. Lowering the limit removes no entry. Only an operator assigned to the queue sets the limit. (Lab 7 change request CR-01, #82, approved by both team members on 26 Nov 2026.) | CR-01 |
 
 ## 6. Non-functional requirements
 
@@ -154,6 +155,7 @@ Made while writing the Sprint 2 and Sprint 3 contracts; each is stated in the co
 | D-19 | A service summary day is a calendar day in Asia/Bangkok (UTC+07:00), end exclusive. Average waiting time is the mean of (called time minus join time) over entries called that day, in whole seconds. | FR-20 | F-13 |
 | D-20 | Priority policy (Q-04, decided by the team, the TA was not asked): operator-marked priority, priority first, at most 3 priority calls in a row. | FR-19, BR-14 | F-12 (planned) |
 | D-21 | Counters (planned): BR-05 is enforced per counter by a partial unique index; `QUEUE_BUSY` is replaced by `COUNTER_BUSY`; the second seeded counter is on Student Affairs. | FR-18, BR-05 | F-12 (planned) |
+| D-22 | Waiting limit (CR-01): `Queue.maxWaiting` nullable with a database check 1..200; the join checks it after the insert under the same queue-row lock (D-12), so concurrent joins never exceed it and a refused join rolls back its number; set through the existing F-10 PATCH. | FR-04, FR-05, FR-15, BR-15 | `docs/maintenance/cr-01-queue-capacity.md` |
 
 ## 9. Open questions
 
@@ -172,6 +174,7 @@ Made while writing the Sprint 2 and Sprint 3 contracts; each is stated in the co
 | 0.1 | 5 Nov 2026 | First baseline for Deliverable 1 | TauForge |
 | 0.2 | 25 Nov 2026 | BR-14 priority policy defined and Q-04 resolved by team decision (was "to be defined with the TA"); see F-12 contract section 3 | MacOverlorD |
 | 0.3 | 25 Nov 2026 | Deliverable 2 baseline: status of every requirement (section 11), decisions D-15..D-21, Q-01, Q-03 and Q-05 settled, D-08 marked for retirement. Requirement text unchanged except BR-14 (0.2). | TauForge |
+| 0.4 | 26 Nov 2026 | Lab 7 change request CR-01 (#82): FR-04, FR-05, FR-12 and FR-15 revised, BR-15 and D-22 added; section 11 row added. Written and reviewed before the code change. | TauForge |
 
 ## 11. Requirement status at Deliverable 2 (release candidate `v0.2.0-rc1`)
 
@@ -184,5 +187,6 @@ Made while writing the Sprint 2 and Sprint 3 contracts; each is stated in the co
 | Delivered in Lab 5 | NFR-09, NFR-06 (redeployment part) |
 | Delivered early from Sprint 3 | FR-20 (service summaries API; the summary screen is planned) |
 | Planned (Sprint 3, contract written) | FR-18, FR-19, BR-05 (per counter), BR-14, NFR-10, NFR-11, and the hardening items in `docs/sprints/sprint-3/hardening.md` |
+| Changed by Lab 7 CR-01 (approved 26 Nov 2026; planned until the CR-01 code PR merges) | FR-04, FR-05, FR-12, FR-15 (revised text), BR-15 (new) |
 | Partial (its own status, not repeated above) | NFR-08: the end-to-end checks pass; the manual loading-state check is not yet recorded |
 

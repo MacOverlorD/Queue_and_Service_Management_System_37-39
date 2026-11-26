@@ -14,7 +14,7 @@ export function displayRouter(prisma: PrismaClient): Router {
     try {
       const id = POSITIVE_INTEGER.test(req.params.id) ? Number(req.params.id) : null;
       const queue =
-        id === null ? null : await prisma.queue.findUnique({ where: { id }, select: { id: true, name: true, isOpen: true } });
+        id === null ? null : await prisma.queue.findUnique({ where: { id }, select: { id: true, name: true, isOpen: true, maxWaiting: true } });
       if (!queue) {
         sendError(res, 404, "NOT_FOUND", "Queue not found.");
         return;
@@ -33,6 +33,8 @@ export function displayRouter(prisma: PrismaClient): Router {
         currentNumber: current?.number ?? null,
         currentStatus: current?.status ?? null,
         waitingCount,
+        // CR-01: only whether the queue is at its limit; the limit itself and all private data stay out (BR-08).
+        isFull: queue.maxWaiting !== null && waitingCount >= queue.maxWaiting,
       });
     } catch (err) {
       next(err);

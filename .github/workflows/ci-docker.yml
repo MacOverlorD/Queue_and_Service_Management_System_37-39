@@ -3,7 +3,7 @@
 # ##############################################################################
 # WHAT THIS WORKFLOW DOES
 #   Runs the project's checks and is used in two ways:
-#     1) directly on every pull request to `main` or `sprint1-staging` (and manually), and
+#     1) directly on every pull request to `main`, `sprint1-staging` or `sprint2-staging` (and manually), and
 #     2) as a REUSABLE workflow called by deploy.yml (`workflow_call`) so the
 #        deploy only starts after these checks pass.
 #   Steps: offline deploy-script tests -> backend tests (real PostgreSQL service)
@@ -40,7 +40,7 @@ name: CI & Docker Build
 on:
   workflow_call:
   pull_request:
-    branches: [main, sprint1-staging]
+    branches: [main, sprint1-staging, sprint2-staging]
   workflow_dispatch:
 
 # Least privilege: this workflow only needs to read the repository.

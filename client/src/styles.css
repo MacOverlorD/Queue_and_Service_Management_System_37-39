@@ -104,3 +104,11 @@ form button { margin-top: var(--space); width: 100%; }
 
 /* F-10: the queue whose serve panel is shown. */
 .list-item.selected { outline: 2px solid currentColor; outline-offset: -2px; }
+
+/* CR-01: waiting limit in the console overview. */
+/* Overview rows wrap so the limit form never causes sideways scrolling at phone width (TEST-F08b-01b). */
+.overview-item { flex-wrap: wrap; }
+.overview-item > * { min-width: 0; }
+.limit { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.limit-input { width: 6rem; max-width: 100%; }
+.display-full { font-weight: 700; margin: 4px 0 0; }

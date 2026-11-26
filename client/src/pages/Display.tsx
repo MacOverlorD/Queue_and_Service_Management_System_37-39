@@ -51,6 +51,11 @@ export default function Display() {
       <p className="display-open" data-testid="display-open">
         {data.isOpen ? "Open" : "Closed"}
       </p>
+      {data.isOpen && data.isFull && (
+        <p className="display-full" data-testid="display-full">
+          Full: not taking new tickets
+        </p>
+      )}
       <ErrorBanner message={failed ? "Cannot load the display. Retrying." : null} />
       <section className="display-now" aria-label="Now serving">
         {data.currentNumber === null ? (
