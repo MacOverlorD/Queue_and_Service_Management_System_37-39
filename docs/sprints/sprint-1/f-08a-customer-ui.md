@@ -11,7 +11,7 @@ A customer signs in, sees the service queues, joins one, and follows their ticke
 | Route | Screen | Content |
 |---|---|---|
 | `/login` | Login | Email, password, submit. Shows API error text on failure. |
-| `/queues` | Queue list | Each queue: name, service, open/closed, waiting count, **Join** button (disabled when closed). |
+| `/queues` | Queue list | Each queue: name, service, open/closed, waiting count, **Join** button (disabled when closed). **(CR-01)** With a limit the count reads "`n` / `max` waiting"; an open queue at its limit shows **Full** and the button is disabled with the text "Full". |
 | `/my-ticket` | My tickets | Active entries with queue name, ticket number, status badge, people ahead for waiting entries. Auto-refresh every 10 seconds. |
 
 Shared header: current user name, role, **Log out**. Unauthenticated visits to `/queues` or `/my-ticket` redirect to `/login`. An operator who opens a customer screen is shown a "not available for your role" message (the server still enforces 403).
@@ -31,6 +31,7 @@ Shared UI states: loading indicator, empty state (for example "You are not in an
 | AC-F08a-03 | The ticket screen shows the saved entry (number, status, people ahead) after a full page reload, proving it comes from the database. |
 | AC-F08a-04 | Loading, empty and error states are shown: empty list message, join error (for example duplicate) shown from the API message. |
 | AC-F08a-05 | The ticket screen refreshes at least every 10 seconds so a status change made by an operator appears without a manual reload. |
+| AC-F08a-06 | (CR-01) A full open queue shows **Full** with a disabled button; after a place opens, Join works. Checked by TEST-F04-13 (e2e). |
 
 ## 5. Software Test Specification
 
@@ -52,3 +53,4 @@ All AC implemented; TEST-F08a-01..05 executed and passing with output in the PR;
 |---|---|---|
 | 5 Nov 2026 | First version | Deliverable 1 |
 | 5 Nov 2026 | TEST-F08a-02/03 use customer3 (customer1 already holds a waiting ticket in queue A in the seed); the duplicate-join case in TEST-F08a-04 uses customer1. The empty state uses customer5, an extra customer with no entries that the e2e reset script adds (the seed itself is unchanged). TEST-F08a-05 uses customer4 joining queue B and the operator calling next through the API. The refresh interval is read from `VITE_REFRESH_MS` (default 10 s) so the test can use 1.5 s. | Match the seed and make the journeys deterministic |
+| 26 Nov 2026 | Queue list shows the waiting limit and a Full state; AC-F08a-06 added | Lab 7 change request CR-01 (#82), contract `docs/maintenance/cr-01-queue-capacity.md` |

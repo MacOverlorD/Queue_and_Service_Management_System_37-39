@@ -1,6 +1,6 @@
 # Change and Defect Register
 
-Version 0.1, 25 Nov 2026 (Deliverable 2, Part A). One register for the findings from deployment (Lab 5), user acceptance testing (Lab 6), the Sprint 1 known gaps and the approved baseline changes, with the decision, the status and the retest at the candidate `v0.2.0-rc1` (`354f72d`, revision `qms-00009-h99`).
+Version 0.2, 26 Nov 2026 (0.1 for Deliverable 2, Part A; 0.2 adds the Lab 7 change CR-01). One register for the findings from deployment (Lab 5), user acceptance testing (Lab 6), the Sprint 1 known gaps and the approved baseline changes, with the decision, the status and the retest at the candidate `v0.2.0-rc1` (`354f72d`, revision `qms-00009-h99`).
 
 Status words: **Resolved** (fixed and retested), **Remaining** (not fixed, with the decision and the plan), **Accepted** (not fixed, accepted by the product team as a documented limitation).
 
@@ -65,11 +65,12 @@ The full text, the triage and our retest comments are in the Lab 6 report (Appen
 | 25 Nov 2026 | `QUEUE_BUSY` becomes `COUNTER_BUSY` when F-12a is built (API error-code change) | Busy is per counter | PR #79 (planned) |
 | 25 Nov 2026 | F-12 seeds the second counter on Student Affairs | Keeps the Sprint 1 and 2 tests unchanged | Review of PR #79 |
 | 25 Nov 2026 | SRS 0.3, features 0.2, system SDS 0.3, traceability 0.2 | Deliverable 2 baseline | PR #80 |
+| 26 Nov 2026 | **CR-01 waiting limit on join**: changes the Sprint 1 join rule (FR-05, AC-F04-02); new BR-15, 409 `QUEUE_FULL`, additive column `Queue.maxWaiting`; four old assertions gain a response field (listed in the contract section 4.2) | Lab 7 maintenance change; approved by both team members (no TA approval needed per the Lab 7 announcement) | #82, `docs/maintenance/cr-01-queue-capacity.md` |
 
 ## 6. Open items for Lab 7 and the final release
 
 | Item | Plan |
 |---|---|
-| Lab 7 maintenance change | Not started; scope as the Lab 7 handout says |
+| Lab 7 maintenance change | CR-01 (#82): contract in this PR; code, release `v0.3.0-lab7` and deployment to follow |
 | Retest of #56 and #57 on the deployed URL | After hardening H-01 and H-02 |
 | Final UAT retests and the final video | By 13 Dec |
