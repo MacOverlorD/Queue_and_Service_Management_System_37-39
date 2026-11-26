@@ -35,11 +35,12 @@ export default function OperatorConsole() {
     if (selectedId !== null && inUrl !== String(selectedId)) select(selectedId);
   }, [selectedId, inUrl, select]);
 
-  async function toggle(q: OperatorQueue) {
+  // Open/close (F-10) and the waiting limit (CR-01) share one busy flag and one error line per overview.
+  async function change(q: OperatorQueue, action: () => Promise<unknown>) {
     setToggleError(null);
     setToggling(q.id);
     try {
-      await api.setQueueOpen(q.id, !q.isOpen);
+      await action();
     } catch (err) {
       setToggleError(handleError(err));
     } finally {
@@ -58,15 +59,41 @@ export default function OperatorConsole() {
         <>
           <ul className="list" aria-label="Overview">
             {queues.map((q) => (
-              <li key={q.id} className={`list-item${q.id === selectedId ? " selected" : ""}`}>
+              <li key={q.id} className={`list-item overview-item${q.id === selectedId ? " selected" : ""}`}>
                 <div>
                   <h2>{q.name}</h2>
                   <p className="muted">
-                    {q.isOpen ? "Open" : "Closed"} · {q.waitingCount} waiting ·{" "}
+                    {q.isOpen ? "Open" : "Closed"} · {q.waitingCount}
+                    {q.maxWaiting !== null && ` / ${q.maxWaiting}`} waiting ·{" "}
                     {q.current ? `#${q.current.number} ${q.current.status === "CALLED" ? "Called" : "Serving"}` : "No one is being served"}
                   </p>
                 </div>
-                <button type="button" className="btn" disabled={toggling === q.id} onClick={() => toggle(q)}>
+                <form
+                  className="limit"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const v = new FormData(e.currentTarget).get("maxWaiting") as string;
+                    change(q, () => api.setMaxWaiting(q.id, v === "" ? null : Number(v)));
+                  }}
+                >
+                  {/* key: a refresh with a new saved value resets the field */}
+                  <input
+                    key={q.maxWaiting ?? "none"}
+                    name="maxWaiting"
+                    type="number"
+                    min={1}
+                    max={200}
+                    step={1}
+                    placeholder="No limit"
+                    defaultValue={q.maxWaiting ?? ""}
+                    aria-label={`Waiting limit for ${q.name}`}
+                    className="limit-input"
+                  />
+                  <button type="submit" className="btn" disabled={toggling === q.id}>
+                    Save limit
+                  </button>
+                </form>
+                <button type="button" className="btn" disabled={toggling === q.id} onClick={() => change(q, () => api.setQueueOpen(q.id, !q.isOpen))}>
                   {q.isOpen ? "Close queue" : "Open queue"}
                 </button>
                 <button type="button" className="btn" disabled={q.id === selectedId} onClick={() => select(q.id)}>
