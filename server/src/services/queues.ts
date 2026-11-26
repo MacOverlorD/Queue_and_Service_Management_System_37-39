@@ -16,6 +16,7 @@ export async function listQueues(prisma: PrismaClient) {
     name: q.name,
     serviceName: q.serviceName,
     isOpen: q.isOpen,
+    maxWaiting: q.maxWaiting,
     waitingCount: q._count.entries,
   }));
 }
@@ -45,10 +46,10 @@ export async function joinQueue(prisma: PrismaClient, queueId: number, customerI
   try {
     const { entry, queueName } = await prisma.$transaction(
       async (tx) => {
-        const rows = await tx.$queryRaw<{ lastNumber: number; name: string }[]>`
+        const rows = await tx.$queryRaw<{ lastNumber: number; name: string; maxWaiting: number | null }[]>`
           UPDATE "Queue" SET "lastNumber" = "lastNumber" + 1
           WHERE id = ${queueId} AND "isOpen" = true
-          RETURNING "lastNumber", name`;
+          RETURNING "lastNumber", name, "maxWaiting"`;
         if (rows.length === 0) {
           const exists = await tx.queue.findUnique({ where: { id: queueId }, select: { id: true } });
           throw exists
@@ -61,6 +62,12 @@ export async function joinQueue(prisma: PrismaClient, queueId: number, customerI
         await tx.entryEvent.create({
           data: { entryId: entry.id, fromStatus: null, toStatus: "WAITING", actorId: customerId },
         });
+        // CR-01 (BR-15): checked under the queue-row lock taken by the UPDATE above, so the count sees every
+        // earlier join; it includes this entry, and throwing rolls back the entry, the event and lastNumber.
+        const limit = rows[0].maxWaiting;
+        if (limit !== null && (await tx.queueEntry.count({ where: { queueId, status: "WAITING" } })) > limit) {
+          throw new ApiError(409, "QUEUE_FULL", "This queue is full. Please try again later.");
+        }
         return { entry, queueName: rows[0].name };
       },
       // Concurrent joins wait on the row lock; the defaults (2 s wait, 5 s run) are too short under load.

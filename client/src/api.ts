@@ -2,7 +2,7 @@ export type Role = "CUSTOMER" | "OPERATOR";
 export type EntryStatus = "WAITING" | "CALLED" | "SERVING" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 
 export type User = { id: number; name: string; email: string; role: Role };
-export type QueueSummary = { id: number; name: string; serviceName: string; isOpen: boolean; waitingCount: number };
+export type QueueSummary = { id: number; name: string; serviceName: string; isOpen: boolean; maxWaiting: number | null; waitingCount: number };
 export type Ticket = {
   id: number;
   queueId: number;
@@ -17,6 +17,7 @@ export type OperatorQueue = {
   id: number;
   name: string;
   isOpen: boolean;
+  maxWaiting: number | null;
   waitingCount: number;
   current: { entryId: number; number: number; status: EntryStatus } | null;
 };
@@ -31,6 +32,7 @@ export type QueueDisplay = {
   currentNumber: number | null;
   currentStatus: "CALLED" | "SERVING" | null;
   waitingCount: number;
+  isFull: boolean;
 };
 
 export class ApiRequestError extends Error {
@@ -80,6 +82,8 @@ export const api = {
   callNext: (queueId: number) => request<unknown>(`/api/queues/${queueId}/call-next`, { method: "POST" }),
   startEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/start`, { method: "POST" }),
   completeEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/complete`, { method: "POST" }),
+  setMaxWaiting: (queueId: number, maxWaiting: number | null) =>
+    request<unknown>(`/api/queues/${queueId}`, { method: "PATCH", body: JSON.stringify({ maxWaiting }) }),
   setQueueOpen: (queueId: number, isOpen: boolean) =>
     request<unknown>(`/api/queues/${queueId}`, { method: "PATCH", body: JSON.stringify({ isOpen }) }),
   noShowEntry: (entryId: number) => request<unknown>(`/api/entries/${entryId}/no-show`, { method: "POST" }),
