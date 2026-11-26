@@ -44,7 +44,9 @@ describe("TEST-F04-01 / AC-F04-01: list queues", () => {
     expect(Object.keys(byName).sort()).toEqual(["Finance Desk", "Registrar Desk", "Student Affairs"]);
     expect(byName["Registrar Desk"]).toMatchObject({ isOpen: true, waitingCount: 2, serviceName: "Document requests" });
     expect(byName["Student Affairs"]).toMatchObject({ isOpen: false, waitingCount: 0 });
-    expect(Object.keys(byName["Registrar Desk"]).sort()).toEqual(["id", "isOpen", "name", "serviceName", "waitingCount"]);
+    // Revised for CR-01 (Lab 7): the list gains maxWaiting (null in the seed); still no entry or customer data.
+    expect(Object.keys(byName["Registrar Desk"]).sort()).toEqual(["id", "isOpen", "maxWaiting", "name", "serviceName", "waitingCount"]);
+    expect(byName["Registrar Desk"].maxWaiting).toBeNull();
     expect(JSON.stringify(res.body)).not.toMatch(/customerId|email|entries/);
   });
 });

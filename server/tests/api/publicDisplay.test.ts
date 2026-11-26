@@ -23,7 +23,8 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-const KEYS = ["currentNumber", "currentStatus", "isOpen", "queueId", "queueName", "waitingCount"];
+// Revised for CR-01 (Lab 7): the display gains isFull; the privacy check below is unchanged.
+const KEYS = ["currentNumber", "currentStatus", "isFull", "isOpen", "queueId", "queueName", "waitingCount"];
 
 // Seed: A has SERVING #4 and WAITING #5 #6; B is empty; C is closed with CALLED #1.
 describe("TEST-F07-01 / AC-F07-01: public display without a session", () => {
@@ -37,6 +38,7 @@ describe("TEST-F07-01 / AC-F07-01: public display without a session", () => {
       currentNumber: 4,
       currentStatus: "SERVING",
       waitingCount: 2,
+      isFull: false,
     });
   });
 
@@ -50,6 +52,7 @@ describe("TEST-F07-01 / AC-F07-01: public display without a session", () => {
       currentNumber: null,
       currentStatus: null,
       waitingCount: 0,
+      isFull: false,
     });
   });
 
