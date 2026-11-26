@@ -2,7 +2,7 @@
 
 Queue and Service Management System, CPE 334 Theme 9.
 Author: MacOverlorD (Lappawat Laohasoot), updated for Deliverable 2 by TauForge (Rattathamnoon Buranapattana). Reviewer: the other student for each change.
-Version 0.3, 25 Nov 2026 (current for release candidate `v0.2.0-rc1`). Requirement IDs (FR, BR, NFR) refer to `docs/srs.md`; feature IDs to `docs/features.md`; decisions D-01 to D-14 to `CLAUDE.md` and D-15 to D-21 to `docs/srs.md` section 8.1.
+Version 0.4, 26 Nov 2026 (`v0.2.0` plus the Lab 7 change CR-01, *planned* until its code PR merges; contract `docs/maintenance/cr-01-queue-capacity.md`). Requirement IDs (FR, BR, NFR) refer to `docs/srs.md`; feature IDs to `docs/features.md`; decisions D-01 to D-14 to `CLAUDE.md` and D-15 to D-21 to `docs/srs.md` section 8.1.
 
 **Status legend used in this document:** parts marked *(delivered)* are implemented on `main` at `v0.2.0-rc1`; parts marked *(planned)* are designed in a contract but not built (F-12 counters and priority, Sprint 3 hardening).
 
@@ -43,12 +43,13 @@ flowchart LR
 | One active entry per customer per queue, BR-01 (409) | join service (F-04) | partial unique index (D-13) |
 | Unique, increasing ticket numbers, BR-02, NFR-03 | join transaction (F-04, D-12) | `@@unique([queueId, number])` |
 | Closed queue rejects joins, BR-10 (409) | join service (F-04) | `Queue.isOpen` in the same `UPDATE` |
+| Full queue rejects joins, BR-15 (409 `QUEUE_FULL`, CR-01 *planned*) | join service (F-04): count of `WAITING` after the insert, rollback when over the limit | queue-row lock from the join `UPDATE`; check constraint 1..200 on `Queue.maxWaiting` |
 | Head of line only, BR-03 | call-next service (F-06, D-07) | row lock on `Queue` |
 | Allowed transitions only, BR-04, BR-11 (409) | conditional update on current status (F-06) | `UPDATE ... WHERE status = <expected>` |
 | One called or serving entry per queue, BR-05 (409) | call-next service (F-06, D-08) | row lock on `Queue` (per counter by a partial unique index in F-12, *planned*) |
 | Cancel only by the owner and only while waiting, BR-12 (404 / 409) | cancel service (F-09): lookup by `id` and `customerId`, conditional update | row lock on `Queue`, `UPDATE ... WHERE status = 'WAITING'` |
 | No-show only on a called entry by an assigned operator, BR-13 (403 / 409) | `transition` with action `noShow` behind `operatorOnEntryParam` (F-09) | `UPDATE ... WHERE status = 'CALLED'` |
-| Open and close only by an assigned operator, BR-09, BR-10 (403 / 400) | `PATCH /api/queues/:id` behind `operatorOnQueueParam`, body exactly `{ isOpen }` (F-10) | `Queue.isOpen` |
+| Open and close only by an assigned operator, BR-09, BR-10 (403 / 400) | `PATCH /api/queues/:id` behind `operatorOnQueueParam`, body exactly `{ isOpen }`, or `{ maxWaiting }` for the limit (F-10, CR-01 *planned*) | `Queue.isOpen`, `Queue.maxWaiting` |
 | Summary only for an assigned operator, day window in Bangkok time, D-19 (403 / 400) | summary service (F-13) reads `EntryEvent` | `EntryEvent.at`, `toStatus` |
 | Public display has no private data, BR-08 | display service selects only safe fields (F-07) | none |
 
@@ -82,7 +83,7 @@ Field names follow the F-01 contract.
 |---|---|---|
 | `User` | `id`, `name`, `email`, `passwordHash`, `role` (`CUSTOMER` / `OPERATOR`) | `email` unique. `passwordHash` is bcrypt (cost 10 or more) and is never returned by the API (NFR-02). |
 | `Session` | `id`, `userId`, `expiresAt` | `id` is a random 32-byte token (base64url). FK to `User` with cascade delete. Deleted on logout; an expired row is treated as absent and deleted when seen. |
-| `Queue` | `id`, `name`, `serviceName`, `lastNumber` (default 0), `isOpen` (default true) | `name` unique. `lastNumber` is the last ticket number handed out (SRS Q-02, resolved in the F-04 contract). |
+| `Queue` | `id`, `name`, `serviceName`, `lastNumber` (default 0), `isOpen` (default true), `maxWaiting` (nullable, CR-01 *planned*) | `name` unique. `lastNumber` is the last ticket number handed out (SRS Q-02, resolved in the F-04 contract). `maxWaiting` is the waiting limit (BR-15): null means none, otherwise 1..200 by a database check; added by an additive migration, existing queues stay null. |
 | `OperatorQueue` | `userId`, `queueId` | Composite primary key, both FK. Only `OPERATOR` users are linked (seed). |
 | `QueueEntry` | `id`, `queueId`, `customerId`, `number`, `status`, `createdAt`, `calledAt`, `servingAt`, `completedAt`, `handledByOperatorId` | `status` is `WAITING`, `CALLED`, `SERVING`, `COMPLETED`, `CANCELLED` or `NO_SHOW` (the last two are reachable only from Sprint 2). `@@unique([queueId, number])`. Partial unique index on `(queueId, customerId)` where status is active (D-13). |
 | `EntryEvent` | `id`, `entryId`, `fromStatus` (null for join), `toStatus`, `actorId`, `at` | Append-only history (FR-11), written in the same transaction as each status change. Source of the service summaries (FR-20, F-13, *delivered*). |
@@ -135,11 +136,11 @@ Sprint 1 had the first four arrows; Sprint 2 added cancel and no-show (F-09, *de
 
 ### 3.4 Concurrency design
 
-- **Join (F-04, D-12):** one transaction runs `UPDATE "Queue" SET "lastNumber" = "lastNumber" + 1 WHERE id = $1 AND "isOpen" = true RETURNING "lastNumber"` and inserts the entry with the returned number. The `UPDATE` takes a row lock, so concurrent joins on the same queue get different, consecutive numbers (NFR-03). Zero rows means the queue is closed or missing. A duplicate active entry violates the partial unique index; the service maps that error to `409 DUPLICATE_ACTIVE_ENTRY` and the whole transaction rolls back, so the counter does not advance. Numbers are never reused (D-09).
+- **Join (F-04, D-12):** one transaction runs `UPDATE "Queue" SET "lastNumber" = "lastNumber" + 1 WHERE id = $1 AND "isOpen" = true RETURNING "lastNumber"` and inserts the entry with the returned number. The `UPDATE` takes a row lock, so concurrent joins on the same queue get different, consecutive numbers (NFR-03). Zero rows means the queue is closed or missing. A duplicate active entry violates the partial unique index; the service maps that error to `409 DUPLICATE_ACTIVE_ENTRY` and the whole transaction rolls back, so the counter does not advance. Numbers are never reused (D-09). **CR-01 (*planned*):** the `UPDATE` also returns `maxWaiting`; after the insert, if it is set, the service counts the queue's `WAITING` entries and throws `409 QUEUE_FULL` when the count exceeds it, rolling back the entry, the event and the number. Because the lock is held and read committed sees every earlier committed join, the limit holds under concurrent joins (D-22).
 - **Call next (F-06, D-07, D-08):** one transaction locks the queue row (`SELECT id FROM "Queue" WHERE id = $1 FOR UPDATE`), returns `409 QUEUE_BUSY` if an entry is `CALLED` or `SERVING`, picks the `WAITING` entry with the lowest number, sets it to `CALLED`, and writes an `EntryEvent`. The lock serializes concurrent call-next requests on one queue.
 - **Cancel (F-09, D-15, D-16):** one transaction finds the entry by `id` and `customerId` (a missing or foreign entry is `404`), locks the same queue row that call-next locks, then runs `UPDATE ... SET status = 'CANCELLED' WHERE id = $1 AND "customerId" = $2 AND status = 'WAITING'` and writes the `EntryEvent`. Because both lock the queue row, a cancel and a call-next on the same entry cannot both succeed (tested for 10 rounds, TEST-F09-11).
 - **No-show (F-09):** the same conditional update as start and complete, from `CALLED` to `NO_SHOW`; afterwards no entry is `CALLED` or `SERVING`, so the next call-next succeeds.
-- **Open and close (F-10):** a single `UPDATE` of `Queue.isOpen`; entries are untouched. Setting the current value again is a no-op.
+- **Open and close (F-10):** a single `UPDATE` of `Queue.isOpen`; entries are untouched. Setting the current value again is a no-op. Setting the waiting limit (CR-01) is a single `UPDATE` of `Queue.maxWaiting` on the same row, so it waits for an in-progress join.
 - **Summary (F-13):** read-only; counts `EntryEvent` rows of one queue whose `at` lies in the Bangkok day, and averages (called time minus `QueueEntry.createdAt`) over the `CALLED` events of that day.
 - **Start and complete (F-06):** `UPDATE "QueueEntry" SET status = <next>, <time column> = now() WHERE id = $1 AND status = <expected>`. Zero rows updated means the transition is not allowed (or a concurrent request already did it), so the API returns `409 INVALID_TRANSITION`.
 
@@ -157,10 +158,10 @@ Sprint 1 had the first four arrows; Sprint 2 added cancel and no-show (F-09, *de
 | Route | Who | Content | Feature |
 |---|---|---|---|
 | `/login` | anyone | Email and password form; after login, redirect by role | F-08a |
-| `/queues` | customer | Queues with name, service, open/closed, waiting count, Join button | F-08a |
+| `/queues` | customer | Queues with name, service, open/closed, waiting count (against the limit when set), Join button; **Full** with a disabled button at the limit (CR-01) | F-08a |
 | `/my-ticket` | customer | Active entries with number, status, people ahead, **Cancel ticket** on a waiting entry; refreshes every 10 s | F-08a, F-09 |
-| `/operator` | operator | Overview of every assigned queue (open/closed, waiting count, current entry, Open/Close and Select buttons), then the serve panel of the selected queue: current entry, waiting list, Call next, Start, Complete, **No-show**; the selected queue is kept in `?queue=<id>`; refreshes every 10 s | F-08b, F-09, F-10 |
-| `/display/:queueId` | anyone (no login) | Queue name, open/closed, now serving number and status, waiting count, last update time; refreshes every 10 s; "Queue not found." and an error banner that keeps the last numbers | F-11 |
+| `/operator` | operator | Overview of every assigned queue (open/closed, waiting count, current entry, Open/Close and Select buttons, waiting limit input from CR-01), then the serve panel of the selected queue: current entry, waiting list, Call next, Start, Complete, **No-show**; the selected queue is kept in `?queue=<id>`; refreshes every 10 s | F-08b, F-09, F-10 |
+| `/display/:queueId` | anyone (no login) | Queue name, open/closed, now serving number and status, waiting count, "Full" line when at the limit (CR-01), last update time; refreshes every 10 s; "Queue not found." and an error banner that keeps the last numbers | F-11 |
 | header | logged-in users | User name, role, Log out | F-08a |
 
 On load the client calls `GET /api/auth/me`. Without a session it goes to `/login`. A user on the other role's screen sees a "not available for your role" message. This is navigation only; the API still enforces every rule. Status updates use polling (NFR-08); WebSockets are out of scope.
@@ -214,7 +215,7 @@ Sprint 2 and F-13 added no new error code: cancel and no-show use `NOT_FOUND`, `
 | `GET /api/queues/:id/display` | public | F-07 (used by the F-11 page) |
 | `POST /api/me/entries/:id/cancel` | customer (own entry only, others 404) | F-09 |
 | `POST /api/entries/:id/no-show` | operator assigned to the entry's queue | F-09 |
-| `PATCH /api/queues/:id` | operator assigned to the queue; body `{ isOpen }` | F-10 |
+| `PATCH /api/queues/:id` | operator assigned to the queue; body `{ isOpen }` or `{ maxWaiting }` (CR-01) | F-10 |
 | `GET /api/queues/:id/summary?date=YYYY-MM-DD` | operator assigned to the queue | F-13 |
 | `POST /api/entries/:id/priority`; `call-next` with `counterId` | operator assigned (planned) | F-12 |
 
@@ -304,3 +305,4 @@ Because the migration job runs the seed on each deploy, the seed must stay rerun
 | 0.1 | 2026-11-05 | MacOverlorD | First draft, aligned with SRS v0.1 and the F-01, F-03, F-05, F-07, F-08a contracts |
 | 0.2 | 2026-11-05 | MacOverlorD | Tau's review on #16: seed wording after BR-05 fix, per-file `resetAndSeed()`, `TEST_DATABASE_URL` and `SEED_PASSWORD`, lowercase email lookup |
 | 0.3 | 2026-11-25 | TauForge | Deliverable 2: Sprint 2 and F-13 as built (rules, concurrency of cancel, endpoints, permission matrix, screens), planned F-12 data model and hardening marked *planned*, deployment section updated from Lab 5, SDS-Q1 and SDS-Q2 resolved |
+| 0.4 | 2026-11-26 | TauForge | Lab 7 change CR-01 (#82): `Queue.maxWaiting`, BR-15 enforcement in the join transaction, PATCH body, screens; marked *planned* until the code PR merges |

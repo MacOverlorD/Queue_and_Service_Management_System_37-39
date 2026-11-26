@@ -149,6 +149,10 @@ Q-04 was written in Deliverable 1 as a question for the TA ("Define with TA befo
 
 Reason: the Theme 9 brief (`group_work_specs_v1.pdf`, Theme 9 "Queue and Service Management System", "Later sprints") lists "priority policy if applicable", so a priority policy is optional scope that the team defines; operator marking keeps customers from self-declaring priority.
 
+## 9a. Constraint from CR-01 (waiting limit)
+
+The Lab 7 change CR-01 (#82, `docs/maintenance/cr-01-queue-capacity.md`) limits admission: a join is refused when `maxWaiting` entries are `WAITING`. F-12 changes only which waiting entry is called. The limit counts every `WAITING` entry, priority or normal, and does not depend on counters. F-12 must keep the join check and its tests (TEST-F04-07..14) unchanged.
+
 ## 10. Revisions
 
 | Date | Change | Reason |
